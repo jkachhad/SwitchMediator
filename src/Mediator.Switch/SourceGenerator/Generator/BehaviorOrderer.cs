@@ -17,7 +17,7 @@ public static class BehaviorOrderer
                 var order = orderAttribute?.ConstructorArguments.FirstOrDefault().Value as int? ?? int.MaxValue;
                 return (Behavior: behavior, Order: order);
             })
-            .OrderBy(b => b.Order)
+            .OrderByDescending(b => b.Order)
             .Select(b => b.Behavior)
             .ToList();
     }
