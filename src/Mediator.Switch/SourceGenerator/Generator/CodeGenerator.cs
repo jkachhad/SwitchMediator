@@ -55,7 +55,7 @@ public static class CodeGenerator
             {
                 var handler = handlers.FirstOrDefault(h => h.TRequest.Equals(r.Request.Class, SymbolEqualityComparer.Default));
                 if (handler == default) return null;
-                return $"case {r.Request.Class} {r.Request.Class.GetVariableName()}:\n                return ToResponse<TResponse>(\n                    await Handle{r.Request.Class.Name}WithBehaviors({r.Request.Class.GetVariableName()}));";
+                return $"case {r.Request.Class} {r.Request.Class.GetVariableName()}:\n                return ToResponse<TResponse>(\n                    await Handle{r.Request.Class.Name}WithBehaviors({r.Request.Class.GetVariableName()}, cancellationToken));";
             }).Where(c => c != null);
 
         // Generate behavior chain methods
@@ -66,9 +66,12 @@ public static class CodeGenerator
             if (handler == default) return null;
             var chain = BehaviorChainBuilder.Build(applicableBehaviors, request.Class.GetVariableName(), $"_{handler.Class.GetVariableName()}.Handle");
             return $$"""
-                     private async Task<{{request.TResponse}}> Handle{{request.Class.Name}}WithBehaviors({{request.Class}} request)
+                     private async Task<{{request.TResponse}}> Handle{{request.Class.Name}}WithBehaviors(
+                             {{request.Class}} request,
+                             CancellationToken cancellationToken)
                          {
-                             return {{chain}};
+                             return
+                                 {{chain}};
                          }
                      """;
         }).Where(m => m != null);
@@ -82,7 +85,7 @@ public static class CodeGenerator
                               {
                                   foreach (var handler in _{{n.GetVariableName()}}__Handlers)
                                   {
-                                      await handler.Handle({{n.GetVariableName()}});
+                                      await handler.Handle({{n.GetVariableName()}}, cancellationToken);
                                   }
                                   break;
                               }
@@ -120,7 +123,7 @@ public static class CodeGenerator
                       {{string.Join("\n        ", constructorInitializers)}}
                   }
               
-                  public async Task<TResponse> Send<TResponse>(IRequest<TResponse> request)
+                  public async Task<TResponse> Send<TResponse>(IRequest<TResponse> request, CancellationToken cancellationToken = default)
                   {
                       switch (request)
                       {
@@ -130,7 +133,7 @@ public static class CodeGenerator
                       }
                   }
               
-                  public async Task Publish(INotification notification)
+                  public async Task Publish(INotification notification, CancellationToken cancellationToken = default)
                   {
                       switch (notification)
                       {
