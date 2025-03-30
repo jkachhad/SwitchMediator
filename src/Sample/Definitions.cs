@@ -51,6 +51,15 @@ public class UserLoggedInEvent : INotification
 }
 
 // Handlers
+public class BaseRequestHandler<TRequest, TResponse> : IRequestHandler<TRequest, TResponse> where TRequest : IRequest<TResponse>
+{
+    // This should be ignored (handlers can't be generic types) - todo: add unit test
+    public Task<TResponse> Handle(TRequest request)
+    {
+        throw new NotImplementedException();
+    }
+}
+
 public class GetUserRequestHandler : IRequestHandler<GetUserRequest, Result<string>>
 {
     public async Task<Result<string>> Handle(GetUserRequest request) => $"User {request.UserId} at {request.Timestamp}";

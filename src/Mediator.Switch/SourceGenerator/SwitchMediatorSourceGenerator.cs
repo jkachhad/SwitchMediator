@@ -1,3 +1,4 @@
+using Mediator.Switch.SourceGenerator.Exceptions;
 using Mediator.Switch.SourceGenerator.Generator;
 using Microsoft.CodeAnalysis;
 
@@ -8,8 +9,6 @@ namespace Mediator.Switch.SourceGenerator
     {
         /*
          * TODO:
-         *     - add [RequestHandler(typeof(PingHandler))] attribute
-         *     - throw fine-grained custom exceptions with location info, report with it too.
          *     - support CancellationToken in mediator pipelines / handlers. (check MediatR)
          */
         
@@ -25,8 +24,9 @@ namespace Mediator.Switch.SourceGenerator
 
             try
             {
+                var cancellationToken = context.CancellationToken;
                 var analyzer = new SemanticAnalyzer(context.Compilation);
-                var (handlers, requestBehaviors, notifications) = analyzer.Analyze(receiver.Classes);
+                var (handlers, requestBehaviors, notifications) = analyzer.Analyze(receiver.Classes, cancellationToken);
 
                 var sourceCode = CodeGenerator.Generate(handlers, requestBehaviors, notifications);
 
@@ -44,6 +44,18 @@ namespace Mediator.Switch.SourceGenerator
                         DiagnosticSeverity.Error,
                         true),
                     Location.None));
+            }
+            catch (SourceGenerationException ex)
+            {
+                context.ReportDiagnostic(Diagnostic.Create(
+                    new DiagnosticDescriptor(
+                        "SMG002",
+                        "Error generating SwitchMediator",
+                        ex.Message,
+                        "Mediator.Switch.Generation",
+                        DiagnosticSeverity.Error,
+                        true),
+                    ex.Location));
             }
             catch (Exception ex)
             {

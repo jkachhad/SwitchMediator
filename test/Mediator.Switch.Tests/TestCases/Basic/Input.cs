@@ -3,6 +3,7 @@ using System.Threading.Tasks;
 
 namespace Test.Basic;
 
+[RequestHandler(typeof(PingHandler))]
 public class Ping : IRequest<string>;
 public class PingHandler : IRequestHandler<Ping, string>
 {

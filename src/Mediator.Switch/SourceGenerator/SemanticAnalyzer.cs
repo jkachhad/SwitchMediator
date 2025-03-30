@@ -1,3 +1,4 @@
+using Mediator.Switch.SourceGenerator.Exceptions;
 using Mediator.Switch.SourceGenerator.Generator;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
@@ -24,15 +25,15 @@ public class SemanticAnalyzer
         var iRequestHandlerSymbol = compilation.GetTypeByMetadataName("Mediator.Switch.IRequestHandler`2");
         var iPipelineBehaviorSymbol = compilation.GetTypeByMetadataName("Mediator.Switch.IPipelineBehavior`2");
         var iNotificationSymbol = compilation.GetTypeByMetadataName("Mediator.Switch.INotification");
-
-        var iNotificationHandlerSymbol = compilation.GetTypeByMetadataName("Mediator.Switch.INotificationHandler`1");
+        var iNotificationHandlerSymbol = compilation.GetTypeByMetadataName("Mediator.Switch.INotificationHandler`1"); 
+        
         var orderAttributeSymbol = compilation.GetTypeByMetadataName("Mediator.Switch.PipelineBehaviorOrderAttribute");
-
         var responseAdaptorAttributeSymbol = compilation.GetTypeByMetadataName("Mediator.Switch.PipelineBehaviorResponseAdaptorAttribute");
+        var requestHandlerAttributeSymbol = compilation.GetTypeByMetadataName("Mediator.Switch.RequestHandlerAttribute");
 
         if (iRequestSymbol == null || iRequestHandlerSymbol == null || iPipelineBehaviorSymbol == null ||
             iNotificationSymbol == null || iNotificationHandlerSymbol == null || orderAttributeSymbol == null ||
-            responseAdaptorAttributeSymbol == null)
+            responseAdaptorAttributeSymbol == null || requestHandlerAttributeSymbol == null)
         {
             throw new InvalidOperationException("Could not find required Mediator.Switch types.");
         }
@@ -43,12 +44,14 @@ public class SemanticAnalyzer
         _iNotificationSymbol = iNotificationSymbol;
         _orderAttributeSymbol = orderAttributeSymbol;
         _responseAdaptorAttributeSymbol = responseAdaptorAttributeSymbol;
+        _requestHandlerAttributeSymbol = requestHandlerAttributeSymbol;
     }
 
-    public (List<(ITypeSymbol Class, ITypeSymbol TRequest, ITypeSymbol TResponse)> Handlers,
-        List<((ITypeSymbol Class, ITypeSymbol TResponse) Request, List<(ITypeSymbol Class, ITypeSymbol TRequest, ITypeSymbol TResponse, IReadOnlyList<ITypeParameterSymbol> TypeParameters)> Behaviors)> RequestBehaviors,
-        List<ITypeSymbol> Notifications)
-        Analyze(List<ClassDeclarationSyntax> classes)
+    public (List<(ITypeSymbol Class, ITypeSymbol TRequest, ITypeSymbol TResponse)> Handlers, List<((ITypeSymbol Class,
+            ITypeSymbol TResponse) Request,
+            List<(ITypeSymbol Class, ITypeSymbol TRequest, ITypeSymbol TResponse, IReadOnlyList<ITypeParameterSymbol>
+                TypeParameters)> Behaviors)> RequestBehaviors, List<ITypeSymbol> Notifications)
+        Analyze(List<ClassDeclarationSyntax> classes, CancellationToken cancellationToken)
     {
         var requests = new List<(ITypeSymbol Class, ITypeSymbol TResponse)>();
         var handlers = new List<(ITypeSymbol Class, ITypeSymbol TRequest, ITypeSymbol TResponse)>();
@@ -57,13 +60,17 @@ public class SemanticAnalyzer
 
         foreach (var classSyntax in classes)
         {
+            if (cancellationToken.IsCancellationRequested)
+                break;
+                
             var model = _compilation.GetSemanticModel(classSyntax.SyntaxTree);
-            var classSymbol = model.GetDeclaredSymbol(classSyntax);
-            if (classSymbol == null) continue;
+            var classSymbol = model.GetDeclaredSymbol(classSyntax, cancellationToken);
+            if (classSymbol is not {Kind: SymbolKind.NamedType})
+                continue;
 
             var requestInterface = classSymbol.AllInterfaces.FirstOrDefault(i =>
                 i.OriginalDefinition.Equals(_iRequestSymbol, SymbolEqualityComparer.Default));
-            if (requestInterface != null)
+            if (requestInterface != null && classSymbol.TypeArguments.Length == 0)
             {
                 var tResponse = requestInterface.TypeArguments[0];
                 requests.Add((classSymbol, tResponse));
@@ -71,16 +78,17 @@ public class SemanticAnalyzer
 
             var handlerInterface = classSymbol.AllInterfaces.FirstOrDefault(i =>
                 i.OriginalDefinition.Equals(_iRequestHandlerSymbol, SymbolEqualityComparer.Default));
-            if (handlerInterface != null)
+            if (handlerInterface != null && classSymbol.TypeArguments.Length == 0 && !classSymbol.IsAbstract)
             {
                 var tRequest = handlerInterface.TypeArguments[0];
                 var tResponse = handlerInterface.TypeArguments[1];
+                VerifyRequestMatchesHandler(classSymbol, tRequest);
                 handlers.Add((classSymbol, tRequest, tResponse));
             }
 
             var behaviorInterface = classSymbol.AllInterfaces.FirstOrDefault(i =>
                 i.OriginalDefinition.Equals(_iPipelineBehaviorSymbol, SymbolEqualityComparer.Default));
-            if (behaviorInterface != null)
+            if (behaviorInterface != null && !classSymbol.IsAbstract)
             {
                 var tRequest = behaviorInterface.TypeArguments[0];
                 var tResponse = behaviorInterface.TypeArguments[1];
@@ -88,7 +96,9 @@ public class SemanticAnalyzer
                 behaviors.Add((classSymbol, tRequest, tResponse, typeParameters));
             }
 
-            if (classSymbol.AllInterfaces.Any(i => i.Equals(_iNotificationSymbol, SymbolEqualityComparer.Default)))
+            var notificationInterface = classSymbol.AllInterfaces.FirstOrDefault(i =>
+                i.OriginalDefinition.Equals(_iNotificationSymbol, SymbolEqualityComparer.Default));
+            if (notificationInterface != null && classSymbol.TypeArguments.Length == 0)
             {
                 notifications.Add(classSymbol);
             }
@@ -110,7 +120,27 @@ public class SemanticAnalyzer
 
         return (handlers, requestBehaviors, notifications);
     }
-    
+
+    private void VerifyRequestMatchesHandler(INamedTypeSymbol classSymbol, ITypeSymbol handledType)
+    {
+        var requestHandlerAttribute = handledType.GetAttributes()
+            .FirstOrDefault(attr => attr.AttributeClass?.Equals(_requestHandlerAttributeSymbol, SymbolEqualityComparer.Default) ?? false);
+
+        if (requestHandlerAttribute == null)
+            return;
+
+        var attributeSymbol = (INamedTypeSymbol) requestHandlerAttribute.ConstructorArguments.Single().Value!;
+        if (!attributeSymbol.Equals(classSymbol, SymbolEqualityComparer.Default))
+        {
+            var syntaxReference = requestHandlerAttribute.ApplicationSyntaxReference;
+            throw new SourceGenerationException(
+                $"RequestHandlerAttribute: Handler type mismatch - expecting {classSymbol.ToDisplayString()}",
+                syntaxReference != null
+                    ? Location.Create(syntaxReference.SyntaxTree, syntaxReference.Span)
+                    : Location.None);
+        }
+    }
+
     private ITypeSymbol? TryUnwrapRequestTResponse(
         (ITypeSymbol Class, ITypeSymbol TRequest, ITypeSymbol TResponse, IReadOnlyList<ITypeParameterSymbol> TypeParameters) b,
         (ITypeSymbol Class, ITypeSymbol TResponse) request)
@@ -118,30 +148,35 @@ public class SemanticAnalyzer
         var responseTypeAdaptorAttribute = b.Class.GetAttributes()
             .FirstOrDefault(attr => attr.AttributeClass?.Equals(_responseAdaptorAttributeSymbol, SymbolEqualityComparer.Default) ?? false);
         
-        var responseWrapperType = GetAdaptorWrapperType(responseTypeAdaptorAttribute);
-        if (responseWrapperType == null) 
+        if (responseTypeAdaptorAttribute == null)
             return null;
         
+        var responseWrapperType = GetAdaptorWrapperType(responseTypeAdaptorAttribute);
         if (request.TResponse is not INamedTypeSymbol unwrappedResponseType ||
             !SymbolEqualityComparer.Default.Equals(unwrappedResponseType.OriginalDefinition, responseWrapperType.OriginalDefinition))
         {
-            throw new ArgumentException($"{nameof(PipelineBehaviorResponseAdaptorAttribute)}.{nameof(PipelineBehaviorResponseAdaptorAttribute.GenericsType)} does not match IPipelineBehavior's TResponse argument.");
+            var syntaxReference = responseTypeAdaptorAttribute.ApplicationSyntaxReference;
+            throw new SourceGenerationException($"{nameof(PipelineBehaviorResponseAdaptorAttribute)}.{nameof(PipelineBehaviorResponseAdaptorAttribute.GenericsType)} does not match IPipelineBehavior's TResponse argument.",
+                syntaxReference != null
+                    ? Location.Create(syntaxReference.SyntaxTree, syntaxReference.Span)
+                    : Location.None);
         }
 
         return unwrappedResponseType.TypeArguments[0];
     }
 
-    private static INamedTypeSymbol? GetAdaptorWrapperType(AttributeData? responseTypeAdaptorAttribute)
+    private static INamedTypeSymbol GetAdaptorWrapperType(AttributeData responseTypeAdaptorAttribute)
     {
-        if (responseTypeAdaptorAttribute == null)
-            return null;
-        
-        var argValue = responseTypeAdaptorAttribute.ConstructorArguments.Single().Value;
-        if (argValue is not INamedTypeSymbol typeArgSymbol)
-            throw new ArgumentException($"{nameof(PipelineBehaviorResponseAdaptorAttribute)}.{nameof(PipelineBehaviorResponseAdaptorAttribute.GenericsType)}  must have a value.");
-            
+        var typeArgSymbol = (INamedTypeSymbol) responseTypeAdaptorAttribute.ConstructorArguments.Single().Value!;
+
         if (!typeArgSymbol.IsUnboundGenericType || typeArgSymbol.TypeArguments.Length != 1)
-            throw new ArgumentException($"{nameof(PipelineBehaviorResponseAdaptorAttribute)}.{nameof(PipelineBehaviorResponseAdaptorAttribute.GenericsType)}  must be an unbound generic type with 1 argument.");
+        {
+            var syntaxReference = responseTypeAdaptorAttribute.ApplicationSyntaxReference;
+            throw new SourceGenerationException($"{nameof(PipelineBehaviorResponseAdaptorAttribute)}.{nameof(PipelineBehaviorResponseAdaptorAttribute.GenericsType)}  must be an unbound generic type with 1 argument.",
+                    syntaxReference != null
+                        ? Location.Create(syntaxReference.SyntaxTree, syntaxReference.Span)
+                        : Location.None);
+        }
 
         return typeArgSymbol;
     }
