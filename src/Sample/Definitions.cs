@@ -54,7 +54,7 @@ public class UserLoggedInEvent : INotification
 public class BaseRequestHandler<TRequest, TResponse> : IRequestHandler<TRequest, TResponse> where TRequest : IRequest<TResponse>
 {
     // This should be ignored (handlers can't be generic types) - todo: add unit test
-    public Task<TResponse> Handle(TRequest request)
+    public Task<TResponse> Handle(TRequest request, CancellationToken cancellationToken = default)
     {
         throw new NotImplementedException();
     }
@@ -62,27 +62,32 @@ public class BaseRequestHandler<TRequest, TResponse> : IRequestHandler<TRequest,
 
 public class GetUserRequestHandler : IRequestHandler<GetUserRequest, Result<string>>
 {
-    public async Task<Result<string>> Handle(GetUserRequest request) => $"User {request.UserId} at {request.Timestamp}";
+    public async Task<Result<string>> Handle(GetUserRequest request, CancellationToken cancellationToken = default) =>
+        $"User {request.UserId} at {request.Timestamp}";
 }
 
 public class CreateOrderRequestHandler : IRequestHandler<CreateOrderRequest, Result<int>>
 {
-    public async Task<Result<int>> Handle(CreateOrderRequest request) => 42; // Simulated order ID
+    public async Task<Result<int>> Handle(CreateOrderRequest request, CancellationToken cancellationToken = default) =>
+        42; // Simulated order ID
 }
 
 public class GetVersionRequestHandler : IRequestHandler<GetVersionRequest, Result<VersionedResponse>>
 {
-    public async Task<Result<VersionedResponse>> Handle(GetVersionRequest request) => new VersionedResponse{ Version = 42 };
+    public async Task<Result<VersionedResponse>> Handle(GetVersionRequest request, CancellationToken cancellationToken = default) =>
+        new VersionedResponse{ Version = 42 };
 }
 
 public class UserLoggedInLogger : INotificationHandler<UserLoggedInEvent>
 {
-    public async Task Handle(UserLoggedInEvent notification) => Console.WriteLine($"Logged: User {notification.UserId} logged in.");
+    public async Task Handle(UserLoggedInEvent notification, CancellationToken cancellationToken = default) =>
+        Console.WriteLine($"Logged: User {notification.UserId} logged in.");
 }
 
 public class UserLoggedInAnalytics : INotificationHandler<UserLoggedInEvent>
 {
-    public async Task Handle(UserLoggedInEvent notification) => Console.WriteLine($"Analytics: User {notification.UserId} tracked.");
+    public async Task Handle(UserLoggedInEvent notification, CancellationToken cancellationToken = default) => 
+        Console.WriteLine($"Analytics: User {notification.UserId} tracked.");
 }
 
 // FluentValidation validators
@@ -108,7 +113,7 @@ public class LoggingBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, 
     where TRequest : notnull
     where TResponse : class
 {
-    public async Task<TResponse> Handle(TRequest request, RequestHandlerDelegate<TResponse> next)
+    public async Task<TResponse> Handle(TRequest request, RequestHandlerDelegate<TResponse> next, CancellationToken cancellationToken = default)
     {
         Console.WriteLine($"Logging: Handling {typeof(TRequest).Name}");
         var response = await next();
@@ -128,7 +133,7 @@ public class ValidationBehavior<TRequest, TResponse> : IPipelineBehavior<TReques
         _validator = validator;
     }
 
-    public async Task<TResponse> Handle(TRequest request, RequestHandlerDelegate<TResponse> next)
+    public async Task<TResponse> Handle(TRequest request, RequestHandlerDelegate<TResponse> next, CancellationToken cancellationToken = default)
     {
         if (_validator != null)
         {
@@ -152,7 +157,7 @@ public class AuditBehaviorInner<TRequest, TResponse> : IPipelineBehavior<TReques
     where TRequest : IAuditableRequest
     where TResponse : IVersionedResponse
 {
-    public async Task<Result<TResponse>> Handle(TRequest request, RequestHandlerDelegate<Result<TResponse>> next)
+    public async Task<Result<TResponse>> Handle(TRequest request, RequestHandlerDelegate<Result<TResponse>> next, CancellationToken cancellationToken = default)
     {
         Console.WriteLine($"Audit: Processing request at {request.Timestamp}");
         var result = await next();
@@ -170,7 +175,7 @@ public class AuditBehaviorInner<TRequest, TResponse> : IPipelineBehavior<TReques
 public class TransactionBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, TResponse>
     where TRequest : ITransactionalRequest
 {
-    public async Task<TResponse> Handle(TRequest request, RequestHandlerDelegate<TResponse> next)
+    public async Task<TResponse> Handle(TRequest request, RequestHandlerDelegate<TResponse> next, CancellationToken cancellationToken = default)
     {
         Console.WriteLine($"Transaction: Starting with ID {request.TransactionId}");
         var response = await next();

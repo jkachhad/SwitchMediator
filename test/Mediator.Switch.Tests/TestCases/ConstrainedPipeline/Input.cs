@@ -16,14 +16,14 @@ public class SpecialProcessRequest : IRequest<Guid>, ISpecialProcessingRequired
 // Handler for the request
 public class SpecialProcessRequestHandler : IRequestHandler<SpecialProcessRequest, Guid>
 {
-    public Task<Guid> Handle(SpecialProcessRequest request) => Task.FromResult(Guid.NewGuid());
+    public Task<Guid> Handle(SpecialProcessRequest request, CancellationToken cancellationToken = default) => Task.FromResult(Guid.NewGuid());
 }
 
 // A generic behavior that applies to all requests
 public class GenericLoggingBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, TResponse>
     where TRequest : notnull
 {
-    public async Task<TResponse> Handle(TRequest request, RequestHandlerDelegate<TResponse> next)
+    public async Task<TResponse> Handle(TRequest request, RequestHandlerDelegate<TResponse> next, CancellationToken cancellationToken = default)
     {
         Console.WriteLine($"Generic Log: Start {typeof(TRequest).Name}");
         var response = await next();
@@ -36,7 +36,7 @@ public class GenericLoggingBehavior<TRequest, TResponse> : IPipelineBehavior<TRe
 public class SpecialProcessingBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, TResponse>
     where TRequest : ISpecialProcessingRequired // Constraint
 {
-    public async Task<TResponse> Handle(TRequest request, RequestHandlerDelegate<TResponse> next)
+    public async Task<TResponse> Handle(TRequest request, RequestHandlerDelegate<TResponse> next, CancellationToken cancellationToken = default)
     {
         Console.WriteLine($"Special Behavior: Applying special processing to {typeof(TRequest).Name}");
         // Add some "processing" delay or modification if needed for testing runtime
@@ -50,5 +50,5 @@ public class SpecialProcessingBehavior<TRequest, TResponse> : IPipelineBehavior<
 public class NormalRequest : IRequest<int>;
 public class NormalRequestHandler : IRequestHandler<NormalRequest, int>
 {
-    public Task<int> Handle(NormalRequest request) => Task.FromResult(100);
+    public Task<int> Handle(NormalRequest request, CancellationToken cancellationToken = default) => Task.FromResult(100);
 }

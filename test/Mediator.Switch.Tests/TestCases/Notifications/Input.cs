@@ -14,7 +14,7 @@ public class OrderCreatedEvent : INotification
 // First Handler
 public class OrderEmailNotifier : INotificationHandler<OrderCreatedEvent>
 {
-    public Task Handle(OrderCreatedEvent notification)
+    public Task Handle(OrderCreatedEvent notification, CancellationToken cancellationToken = default)
     {
         Console.WriteLine($"Email Handler: Order {notification.OrderId} created at {notification.Timestamp}.");
         return Task.CompletedTask;
@@ -24,7 +24,7 @@ public class OrderEmailNotifier : INotificationHandler<OrderCreatedEvent>
 // Second Handler
 public class OrderAnalyticsTracker : INotificationHandler<OrderCreatedEvent>
 {
-    public Task Handle(OrderCreatedEvent notification)
+    public Task Handle(OrderCreatedEvent notification, CancellationToken cancellationToken = default)
     {
         Console.WriteLine($"Analytics Handler: Tracking order {notification.OrderId}.");
         return Task.CompletedTask;
@@ -35,5 +35,5 @@ public class OrderAnalyticsTracker : INotificationHandler<OrderCreatedEvent>
 public class SimpleRequest : IRequest<bool>;
 public class SimpleRequestHandler : IRequestHandler<SimpleRequest, bool>
 {
-    public Task<bool> Handle(SimpleRequest request) => Task.FromResult(true);
+    public Task<bool> Handle(SimpleRequest request, CancellationToken cancellationToken = default) => Task.FromResult(true);
 }

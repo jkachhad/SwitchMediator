@@ -42,22 +42,22 @@ public class UserLoggedInEvent : INotification
 // Handlers
 public class GetUserRequestHandler : IRequestHandler<GetUserRequest, string>
 {
-    public async Task<string> Handle(GetUserRequest request) => $"User {request.UserId} at {request.Timestamp}";
+    public async Task<string> Handle(GetUserRequest request, CancellationToken cancellationToken = default) => $"User {request.UserId} at {request.Timestamp}";
 }
 
 public class CreateOrderRequestHandler : IRequestHandler<CreateOrderRequest, int>
 {
-    public async Task<int> Handle(CreateOrderRequest request) => 42; // Simulated order ID
+    public async Task<int> Handle(CreateOrderRequest request, CancellationToken cancellationToken = default) => 42; // Simulated order ID
 }
 
 public class UserLoggedInLogger : INotificationHandler<UserLoggedInEvent>
 {
-    public async Task Handle(UserLoggedInEvent notification) => Console.WriteLine($"Logged: User {notification.UserId} logged in.");
+    public async Task Handle(UserLoggedInEvent notification, CancellationToken cancellationToken = default) => Console.WriteLine($"Logged: User {notification.UserId} logged in.");
 }
 
 public class UserLoggedInAnalytics : INotificationHandler<UserLoggedInEvent>
 {
-    public async Task Handle(UserLoggedInEvent notification) => Console.WriteLine($"Analytics: User {notification.UserId} tracked.");
+    public async Task Handle(UserLoggedInEvent notification, CancellationToken cancellationToken = default) => Console.WriteLine($"Analytics: User {notification.UserId} tracked.");
 }
 
 // FluentValidation validators
@@ -82,7 +82,7 @@ public class CreateOrderRequestValidator : AbstractValidator<CreateOrderRequest>
 public class LoggingBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, TResponse>
     where TRequest : notnull
 {
-    public async Task<TResponse> Handle(TRequest request, RequestHandlerDelegate<TResponse> next)
+    public async Task<TResponse> Handle(TRequest request, RequestHandlerDelegate<TResponse> next, CancellationToken cancellationToken = default)
     {
         Console.WriteLine($"Logging: Handling {typeof(TRequest).Name}");
         var response = await next();
@@ -102,7 +102,7 @@ public class ValidationBehavior<TRequest, TResponse> : IPipelineBehavior<TReques
         _validator = validator;
     }
 
-    public async Task<TResponse> Handle(TRequest request, RequestHandlerDelegate<TResponse> next)
+    public async Task<TResponse> Handle(TRequest request, RequestHandlerDelegate<TResponse> next, CancellationToken cancellationToken = default)
     {
         if (_validator != null)
         {
@@ -120,7 +120,7 @@ public class ValidationBehavior<TRequest, TResponse> : IPipelineBehavior<TReques
 public class AuditBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, TResponse>
     where TRequest : IAuditableRequest
 {
-    public async Task<TResponse> Handle(TRequest request, RequestHandlerDelegate<TResponse> next)
+    public async Task<TResponse> Handle(TRequest request, RequestHandlerDelegate<TResponse> next, CancellationToken cancellationToken = default)
     {
         Console.WriteLine($"Audit: Processing request at {request.Timestamp}");
         var response = await next();
@@ -132,7 +132,7 @@ public class AuditBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, TR
 public class TransactionBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, TResponse>
     where TRequest : ITransactionalRequest
 {
-    public async Task<TResponse> Handle(TRequest request, RequestHandlerDelegate<TResponse> next)
+    public async Task<TResponse> Handle(TRequest request, RequestHandlerDelegate<TResponse> next, CancellationToken cancellationToken = default)
     {
         Console.WriteLine($"Transaction: Starting with ID {request.TransactionId}");
         var response = await next();

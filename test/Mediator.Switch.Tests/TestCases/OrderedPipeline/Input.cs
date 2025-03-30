@@ -13,7 +13,7 @@ public class CalculationRequest : IRequest<int>
 // The Handler
 public class CalculationRequestHandler : IRequestHandler<CalculationRequest, int>
 {
-    public Task<int> Handle(CalculationRequest request)
+    public Task<int> Handle(CalculationRequest request, CancellationToken cancellationToken = default)
     {
         Console.WriteLine("--> Handler executing");
         return Task.FromResult(request.Value * request.Value);
@@ -25,7 +25,7 @@ public class CalculationRequestHandler : IRequestHandler<CalculationRequest, int
 public class ValidationBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, TResponse>
     where TRequest : notnull
 {
-    public async Task<TResponse> Handle(TRequest request, RequestHandlerDelegate<TResponse> next)
+    public async Task<TResponse> Handle(TRequest request, RequestHandlerDelegate<TResponse> next, CancellationToken cancellationToken = default)
     {
         Console.WriteLine(" -> Behavior Order 2 (Validation) Start");
         // Simulate validation
@@ -41,7 +41,7 @@ public class ValidationBehavior<TRequest, TResponse> : IPipelineBehavior<TReques
 public class LoggingBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, TResponse>
     where TRequest : notnull
 {
-    public async Task<TResponse> Handle(TRequest request, RequestHandlerDelegate<TResponse> next)
+    public async Task<TResponse> Handle(TRequest request, RequestHandlerDelegate<TResponse> next, CancellationToken cancellationToken = default)
     {
         Console.WriteLine("-> Behavior Order 1 (Logging) Start");
         var response = await next();
@@ -54,7 +54,7 @@ public class LoggingBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, 
 public class MonitoringBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, TResponse>
     where TRequest : notnull
 {
-    public async Task<TResponse> Handle(TRequest request, RequestHandlerDelegate<TResponse> next)
+    public async Task<TResponse> Handle(TRequest request, RequestHandlerDelegate<TResponse> next, CancellationToken cancellationToken = default)
     {
         Console.WriteLine("  -> Behavior Order Default (Monitoring) Start");
         var response = await next();

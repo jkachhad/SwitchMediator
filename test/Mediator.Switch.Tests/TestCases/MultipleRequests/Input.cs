@@ -11,7 +11,8 @@ public class GetProductRequest : IRequest<string>
 
 public class GetProductRequestHandler : IRequestHandler<GetProductRequest, string>
 {
-    public Task<string> Handle(GetProductRequest request) => Task.FromResult($"Product {request.ProductId}");
+    public Task<string> Handle(GetProductRequest request, CancellationToken cancellationToken = default) =>
+        Task.FromResult($"Product {request.ProductId}");
 }
 
 // Second Request
@@ -22,5 +23,6 @@ public class GetInventoryRequest : IRequest<int>
 
 public class GetInventoryRequestHandler : IRequestHandler<GetInventoryRequest, int>
 {
-    public Task<int> Handle(GetInventoryRequest request) => Task.FromResult(request.Sku?.Length ?? 0); // Dummy logic
+    public Task<int> Handle(GetInventoryRequest request, CancellationToken cancellationToken = default) => 
+        Task.FromResult(request.Sku?.Length ?? 0); // Dummy logic
 }
