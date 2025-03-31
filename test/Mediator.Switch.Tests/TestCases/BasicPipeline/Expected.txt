@@ -9,9 +9,10 @@
 
 using System;
 using System.Collections.Generic;
-using System.Threading.Tasks;
-using System.Runtime.CompilerServices;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace Mediator.Switch;
 
@@ -30,19 +31,19 @@ public class SwitchMediator : IMediator
         _test_BasicPipeline_GenericBehavior__test_BasicPipeline_Ping = test_BasicPipeline_GenericBehavior__test_BasicPipeline_Ping;
     }
 
-    public async Task<TResponse> Send<TResponse>(IRequest<TResponse> request)
+    public async Task<TResponse> Send<TResponse>(IRequest<TResponse> request, CancellationToken cancellationToken = default)
     {
         switch (request)
         {
             case Test.BasicPipeline.Ping test_BasicPipeline_Ping:
                 return ToResponse<TResponse>(
-                    await HandlePingWithBehaviors(test_BasicPipeline_Ping));
+                    await HandlePingWithBehaviors(test_BasicPipeline_Ping, cancellationToken));
             default:
                 throw new ArgumentException($"No handler for {request.GetType().Name}");
         }
     }
 
-    public async Task Publish(INotification notification)
+    public async Task Publish(INotification notification, CancellationToken cancellationToken = default)
     {
         switch (notification)
         {
@@ -52,10 +53,14 @@ public class SwitchMediator : IMediator
         }
     }
 
-    private async Task<string> HandlePingWithBehaviors(Test.BasicPipeline.Ping request)
+    private async Task<string> HandlePingWithBehaviors(
+        Test.BasicPipeline.Ping request,
+        CancellationToken cancellationToken)
     {
-        return await _test_BasicPipeline_GenericBehavior__test_BasicPipeline_Ping.Handle(request, async () =>
-            await _test_BasicPipeline_PingHandler.Handle(request));
+        return
+            await _test_BasicPipeline_GenericBehavior__test_BasicPipeline_Ping.Handle(request, async () =>
+            /* Request Handler */ await _test_BasicPipeline_PingHandler.Handle(request, cancellationToken),
+            cancellationToken);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

@@ -9,9 +9,10 @@
 
 using System;
 using System.Collections.Generic;
-using System.Threading.Tasks;
-using System.Runtime.CompilerServices;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace Mediator.Switch;
 
@@ -30,19 +31,19 @@ public class SwitchMediator : IMediator
         _test_Notifications_OrderCreatedEvent__Handlers = test_Notifications_OrderCreatedEvent__Handlers;
     }
 
-    public async Task<TResponse> Send<TResponse>(IRequest<TResponse> request)
+    public async Task<TResponse> Send<TResponse>(IRequest<TResponse> request, CancellationToken cancellationToken = default)
     {
         switch (request)
         {
             case Test.Notifications.SimpleRequest test_Notifications_SimpleRequest:
                 return ToResponse<TResponse>(
-                    await HandleSimpleRequestWithBehaviors(test_Notifications_SimpleRequest));
+                    await HandleSimpleRequestWithBehaviors(test_Notifications_SimpleRequest, cancellationToken));
             default:
                 throw new ArgumentException($"No handler for {request.GetType().Name}");
         }
     }
 
-    public async Task Publish(INotification notification)
+    public async Task Publish(INotification notification, CancellationToken cancellationToken = default)
     {
         switch (notification)
         {
@@ -50,7 +51,7 @@ public class SwitchMediator : IMediator
             {
                 foreach (var handler in _test_Notifications_OrderCreatedEvent__Handlers)
                 {
-                    await handler.Handle(test_Notifications_OrderCreatedEvent);
+                    await handler.Handle(test_Notifications_OrderCreatedEvent, cancellationToken);
                 }
                 break;
             }
@@ -59,9 +60,12 @@ public class SwitchMediator : IMediator
         }
     }
 
-    private async Task<bool> HandleSimpleRequestWithBehaviors(Test.Notifications.SimpleRequest request)
+    private async Task<bool> HandleSimpleRequestWithBehaviors(
+        Test.Notifications.SimpleRequest request,
+        CancellationToken cancellationToken)
     {
-        return await _test_Notifications_SimpleRequestHandler.Handle(request);
+        return
+            /* Request Handler */ await _test_Notifications_SimpleRequestHandler.Handle(request, cancellationToken);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

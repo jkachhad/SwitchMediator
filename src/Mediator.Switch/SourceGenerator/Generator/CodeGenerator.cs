@@ -105,10 +105,11 @@ public static class CodeGenerator
               
               using System;
               using System.Collections.Generic;
-              using System.Threading.Tasks;
-              using System.Runtime.CompilerServices;
               using System.Diagnostics;
-
+              using System.Runtime.CompilerServices;
+              using System.Threading;
+              using System.Threading.Tasks;
+              
               namespace Mediator.Switch;
               
               #pragma warning disable CS1998

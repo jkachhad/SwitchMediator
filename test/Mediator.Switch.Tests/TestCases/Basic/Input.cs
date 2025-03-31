@@ -1,4 +1,5 @@
 using Mediator.Switch;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Test.Basic;
