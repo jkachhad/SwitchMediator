@@ -93,6 +93,7 @@ public class SemanticAnalyzer
                 var tRequest = behaviorInterface.TypeArguments[0];
                 var tResponse = behaviorInterface.TypeArguments[1];
                 var typeParameters = classSymbol.TypeParameters; // Capture constraints
+                VerifyAdaptorMatchesTResponse(classSymbol, tResponse);
                 behaviors.Add((classSymbol, tRequest, tResponse, typeParameters));
             }
 
@@ -108,12 +109,13 @@ public class SemanticAnalyzer
                 (Request: request, Behaviors: behaviors
                     .Select(b =>
                     {
-                        var unwrappedTResponse = TryUnwrapRequestTResponse(b, request);
-                        return unwrappedTResponse != null
-                            ? b with {TResponse = unwrappedTResponse}
-                            : b with {TResponse = request.TResponse};
+                        var actualTResponse = TryUnwrapRequestTResponse(b, request);
+                        return actualTResponse != null
+                            ? b with {TResponse = actualTResponse}
+                            : default;
                     })
-                    .Where(b => BehaviorApplicabilityChecker.IsApplicable(_compilation, b.TypeParameters, request.Class, b.TResponse))
+                    .Where(b => b != default && 
+                                BehaviorApplicabilityChecker.IsApplicable(_compilation, b.TypeParameters, request.Class, b.TResponse))
                     .OrderBy(_orderAttributeSymbol)
                     .ToList()))
             .ToList();
@@ -141,18 +143,16 @@ public class SemanticAnalyzer
         }
     }
 
-    private ITypeSymbol? TryUnwrapRequestTResponse(
-        (ITypeSymbol Class, ITypeSymbol TRequest, ITypeSymbol TResponse, IReadOnlyList<ITypeParameterSymbol> TypeParameters) b,
-        (ITypeSymbol Class, ITypeSymbol TResponse) request)
+    private void VerifyAdaptorMatchesTResponse(INamedTypeSymbol classSymbol, ITypeSymbol tResponse)
     {
-        var responseTypeAdaptorAttribute = b.Class.GetAttributes()
+        var responseTypeAdaptorAttribute = classSymbol.GetAttributes()
             .FirstOrDefault(attr => attr.AttributeClass?.Equals(_responseAdaptorAttributeSymbol, SymbolEqualityComparer.Default) ?? false);
         
         if (responseTypeAdaptorAttribute == null)
-            return null;
+            return;
         
         var responseWrapperType = GetAdaptorWrapperType(responseTypeAdaptorAttribute);
-        if (request.TResponse is not INamedTypeSymbol unwrappedResponseType ||
+        if (tResponse is not INamedTypeSymbol unwrappedResponseType ||
             !SymbolEqualityComparer.Default.Equals(unwrappedResponseType.OriginalDefinition, responseWrapperType.OriginalDefinition))
         {
             var syntaxReference = responseTypeAdaptorAttribute.ApplicationSyntaxReference;
@@ -161,8 +161,24 @@ public class SemanticAnalyzer
                     ? Location.Create(syntaxReference.SyntaxTree, syntaxReference.Span)
                     : Location.None);
         }
+    }
 
-        return unwrappedResponseType.TypeArguments[0];
+    private ITypeSymbol? TryUnwrapRequestTResponse(
+        (ITypeSymbol Class, ITypeSymbol TRequest, ITypeSymbol TResponse, IReadOnlyList<ITypeParameterSymbol> TypeParameters) b,
+        (ITypeSymbol Class, ITypeSymbol TResponse) request)
+    {
+        var responseTypeAdaptorAttribute = b.Class.GetAttributes()
+            .FirstOrDefault(attr => attr.AttributeClass?.Equals(_responseAdaptorAttributeSymbol, SymbolEqualityComparer.Default) ?? false);
+        
+        if (responseTypeAdaptorAttribute == null)
+            return request.TResponse;
+        
+        var responseWrapperType = GetAdaptorWrapperType(responseTypeAdaptorAttribute);
+        if (request.TResponse is INamedTypeSymbol unwrappedResponseType && 
+            SymbolEqualityComparer.Default.Equals(unwrappedResponseType.OriginalDefinition, responseWrapperType.OriginalDefinition))
+            return unwrappedResponseType.TypeArguments[0];
+
+        return null;
     }
 
     private static INamedTypeSymbol GetAdaptorWrapperType(AttributeData responseTypeAdaptorAttribute)

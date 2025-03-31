@@ -1,6 +1,6 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Sample", "src\Sample\Sample.csproj", "{AC9E0690-6326-4AF5-B067-DF4BC6E1E8CA}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Sample.ConsoleApp", "src\Sample.ConsoleApp\Sample.ConsoleApp.csproj", "{AC9E0690-6326-4AF5-B067-DF4BC6E1E8CA}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Mediator.Switch", "src\Mediator.Switch\Mediator.Switch.csproj", "{38F93217-BFA4-48AC-90FE-F325F3B6A0E6}"
 EndProject

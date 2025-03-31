@@ -50,7 +50,7 @@ public static class CodeGenerator
 
         // Generate Send method switch cases
         var sendCases = requestBehaviors
-            .OrderBy(r => r.Request.Class, new TypeHierarchyComparer())
+            .OrderBy(r => r.Request.Class, Comparers.TypeHierarchyComparer)
             .Select(r =>
             {
                 var handler = handlers.FirstOrDefault(h => h.TRequest.Equals(r.Request.Class, SymbolEqualityComparer.Default));
@@ -78,7 +78,7 @@ public static class CodeGenerator
 
         // Generate Publish method switch cases
         var publishCases = notifications
-            .OrderBy(n => n, new TypeHierarchyComparer())
+            .OrderBy(n => n, Comparers.TypeHierarchyComparer)
             .Select(n =>
                 $$"""
                   case {{n}} {{n.GetVariableName()}}:

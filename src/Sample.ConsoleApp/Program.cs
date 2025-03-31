@@ -1,9 +1,9 @@
-﻿using Microsoft.Extensions.DependencyInjection;
-using FluentValidation;
+﻿using FluentValidation;
 using Mediator.Switch;
 using Mediator.Switch.Extensions.Microsoft.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection;
 
-namespace Sample;
+namespace Sample.ConsoleApp;
 
 public static class Program
 {
@@ -33,11 +33,6 @@ public static class Program
         var userRequest = new GetUserRequest(123);
         var userResult = await sender.Send(userRequest);
         Console.WriteLine($"--> Result: {userResult}\n");
-
-        Console.WriteLine("--- Sending GetVersionRequest ---");
-        var versionRequest = new GetVersionRequest();
-        var versionResult = await sender.Send(versionRequest);
-        Console.WriteLine($"--> Result: {versionResult}\n");
 
         Console.WriteLine("--- Sending CreateOrderRequest ---");
         var orderRequest = new CreateOrderRequest("Book");
