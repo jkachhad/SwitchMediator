@@ -44,7 +44,6 @@ Traditional mediator implementations often rely on runtime reflection to discove
 *   🚀 **Maximum Performance:** Eliminates runtime reflection and dictionary lookups for dispatch. Uses compile-time `switch` statements and direct method calls. Ideal for performance-critical paths and high-throughput applications.
 *   🧐 **Enhanced Debuggability:** You can directly **step into the generated `SwitchMediator.g.cs` file**! See the exact `switch` statement matching your request, observe the explicit nesting of pipeline behavior calls (`await next(...)`), and step directly into your handler code. This provides unparalleled transparency compared to debugging reflection-based dispatch logic.
 *   ✅ **Compile-Time Safety:** Handler discovery happens during the build. Missing request handlers result in **build errors**, not runtime exceptions, catching issues earlier in the development cycle.
-*   ⏱️ **Faster Startup:** Less work (like assembly scanning for handlers) needs to happen when your application boots up.
 *   ✂️ **Trimming / AOT Friendly:** Avoids runtime reflection, making the dispatch mechanism inherently more compatible with .NET trimming and AOT compilation. (Note: Ensure handlers and dependencies are also trimming/AOT safe).
 *   🔍 **Explicitness:** The generated code serves as clear, inspectable documentation of how requests are routed and pipelines are constructed for each message type.
 
@@ -73,7 +72,7 @@ dotnet add package Mediator.Switch.Extensions.Microsoft.DependencyInjection
 
 ## Usage Example
 
-This example assumes you have defined your `IRequest`, `INotification`, `IRequestHandler`, `INotificationHandler`, and `IPipelineBehavior` types in your project (e.g., in the `Sample` namespace and `Program`'s assembly).
+Refer to [Sample app](src/Sample.ConsoleApp) for more information.
 
 ### DI Setup
 
