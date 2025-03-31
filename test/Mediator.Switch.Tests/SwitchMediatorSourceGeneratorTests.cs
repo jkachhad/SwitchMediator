@@ -9,10 +9,8 @@ public class SwitchMediatorSourceGeneratorTests : CSharpSourceGeneratorTest<Swit
 {
     public SwitchMediatorSourceGeneratorTests()
     {
-        TestState.AdditionalReferences.Add(typeof(IRequest<>).Assembly);
-        TestState.ReferenceAssemblies = ReferenceAssemblies.Net.Net90.AddPackages([
-            new PackageIdentity("FluentValidation", "11.11.0")
-        ]);
+        TestState.AdditionalReferences.Add(TestDefinitions.MediatorAssembly);
+        TestState.ReferenceAssemblies = TestDefinitions.ReferenceAssemblies;
     }
     
     [Theory]
@@ -27,6 +25,8 @@ public class SwitchMediatorSourceGeneratorTests : CSharpSourceGeneratorTest<Swit
     [InlineData("OrderedPipeline")]
     [InlineData("FullPipeline")]
     [InlineData("NoMessages")]
+    [InlineData("GenericsIgnored")]
+    [InlineData("AbstractsIgnored")]
     public async Task GeneratesSwitchMediatorCorrectly(string testCase)
     {
         var inputCode = await File.ReadAllTextAsync(Path.Combine("TestCases", testCase, "Input.cs"));

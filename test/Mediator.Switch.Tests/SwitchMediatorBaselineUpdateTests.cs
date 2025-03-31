@@ -16,11 +16,8 @@ public class SwitchMediatorBaselineUpdateTests
     private readonly ITestOutputHelper _output;
 
     private static ImmutableArray<MetadataReference>? _metadataReferences;
-    private static readonly ReferenceAssemblies _referenceAssemblies =
-        ReferenceAssemblies.Net.Net90.AddPackages([
-            new PackageIdentity("FluentValidation", "11.11.0")
-        ]);
-    private static readonly Assembly _mediatorAssembly = typeof(IRequest<>).Assembly; // Assuming IRequest is in Mediator assembly
+    private static readonly ReferenceAssemblies _referenceAssemblies = TestDefinitions.ReferenceAssemblies;
+    private static readonly Assembly _mediatorAssembly = TestDefinitions.MediatorAssembly;
 
     public SwitchMediatorBaselineUpdateTests(ITestOutputHelper output)
     {
@@ -39,6 +36,8 @@ public class SwitchMediatorBaselineUpdateTests
     [InlineData("OrderedPipeline")]
     [InlineData("FullPipeline")]
     [InlineData("NoMessages")]
+    [InlineData("GenericsIgnored")]
+    [InlineData("AbstractsIgnored")]
     public async Task UpdateExpectedOutputFile(string testCase)
     {
         await InitializeReferencesAsync(_output); // Ensure references are ready
@@ -58,7 +57,8 @@ public class SwitchMediatorBaselineUpdateTests
         var syntaxTree = CSharpSyntaxTree.ParseText(inputCode, new CSharpParseOptions(LanguageVersion.Latest));
 
         // Ensure we have references resolved
-        if (_metadataReferences == null) {
+        if (_metadataReferences == null)
+        {
             Assert.Fail("Metadata references were not initialized correctly.");
             return; // Keep compiler happy
         }
@@ -203,9 +203,6 @@ public class SwitchMediatorBaselineUpdateTests
                 output.WriteLine($"Warning: Could not resolve location for {_mediatorAssembly.FullName}. Baseline update might be incomplete.");
                 // Consider failing or adding alternative ways to get the reference if needed
             }
-
-            // Add any other essential AdditionalReferences here similarly
-            // Example: references.Add(MetadataReference.CreateFromFile(typeof(SomeOtherType).Assembly.Location));
 
             _metadataReferences = references.ToImmutableArray();
             output.WriteLine($"Resolved {_metadataReferences.Value.Length} references.");

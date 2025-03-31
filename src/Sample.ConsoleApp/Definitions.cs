@@ -2,7 +2,7 @@ using FluentResults;
 using FluentValidation;
 using Mediator.Switch;
 
-namespace Sample;
+namespace Sample.ConsoleApp;
 
 #pragma warning disable CS1998
 
@@ -16,9 +16,14 @@ public interface ITransactionalRequest
     Guid TransactionId { get; }
 }
 
+public interface IVersionedResponse
+{
+    int Version { get; set; }
+}
+
 // Request types
 [RequestHandler(typeof(GetUserRequestHandler))]
-public class GetUserRequest : IRequest<Result<string>>, IAuditableRequest
+public class GetUserRequest : IRequest<Result<User>>, IAuditableRequest
 {
     public int UserId { get; }
     public DateTime Timestamp { get; }
@@ -26,21 +31,11 @@ public class GetUserRequest : IRequest<Result<string>>, IAuditableRequest
 }
 
 [RequestHandler(typeof(CreateOrderRequestHandler))]
-public class CreateOrderRequest : IRequest<Result<int>>, ITransactionalRequest
+public class CreateOrderRequest : IRequest<int>, ITransactionalRequest
 {
     public string Product { get; }
     public Guid TransactionId { get; }
     public CreateOrderRequest(string product) => (Product, TransactionId) = (product, Guid.NewGuid());
-}
-
-[RequestHandler(typeof(GetVersionRequestHandler))]
-public class GetVersionRequest : IRequest<Result<VersionedResponse>>
-{
-}
-
-public class VersionedResponse : IVersionedResponse
-{
-    public int Version { get; set; }
 }
 
 // Notification type
@@ -50,34 +45,33 @@ public class UserLoggedInEvent : INotification
     public UserLoggedInEvent(int userId) => UserId = userId;
 }
 
-// Handlers
-public class BaseRequestHandler<TRequest, TResponse> : IRequestHandler<TRequest, TResponse> where TRequest : IRequest<TResponse>
+// Response models
+public class User : IVersionedResponse
 {
-    // This should be ignored (handlers can't be generic types) - todo: add unit test
-    public Task<TResponse> Handle(TRequest request, CancellationToken cancellationToken = default)
-    {
-        throw new NotImplementedException();
-    }
+    public int UserId { get; set; }
+    public string Description { get; set; } = "";
+    public int Version { get; set; }
 }
 
-public class GetUserRequestHandler : IRequestHandler<GetUserRequest, Result<string>>
+// Request Handlers
+public class GetUserRequestHandler : IRequestHandler<GetUserRequest, Result<User>>
 {
-    public async Task<Result<string>> Handle(GetUserRequest request, CancellationToken cancellationToken = default) =>
-        $"User {request.UserId} at {request.Timestamp}";
+    public async Task<Result<User>> Handle(GetUserRequest request, CancellationToken cancellationToken = default) =>
+        new User
+        {
+            UserId = request.UserId,
+            Description = $"User {request.UserId} at {request.Timestamp}",
+            Version = 50
+        };
 }
 
-public class CreateOrderRequestHandler : IRequestHandler<CreateOrderRequest, Result<int>>
+public class CreateOrderRequestHandler : IRequestHandler<CreateOrderRequest, int>
 {
-    public async Task<Result<int>> Handle(CreateOrderRequest request, CancellationToken cancellationToken = default) =>
+    public async Task<int> Handle(CreateOrderRequest request, CancellationToken cancellationToken = default) =>
         42; // Simulated order ID
 }
 
-public class GetVersionRequestHandler : IRequestHandler<GetVersionRequest, Result<VersionedResponse>>
-{
-    public async Task<Result<VersionedResponse>> Handle(GetVersionRequest request, CancellationToken cancellationToken = default) =>
-        new VersionedResponse{ Version = 42 };
-}
-
+// Notification Handlers
 public class UserLoggedInLogger : INotificationHandler<UserLoggedInEvent>
 {
     public async Task Handle(UserLoggedInEvent notification, CancellationToken cancellationToken = default) =>
@@ -137,7 +131,7 @@ public class ValidationBehavior<TRequest, TResponse> : IPipelineBehavior<TReques
     {
         if (_validator != null)
         {
-            var result = await _validator.ValidateAsync(request);
+            var result = await _validator.ValidateAsync(request, cancellationToken);
             if (!result.IsValid)
             {
                 throw new ValidationException(result.Errors);
@@ -147,31 +141,42 @@ public class ValidationBehavior<TRequest, TResponse> : IPipelineBehavior<TReques
     }
 }
 
-public interface IVersionedResponse
-{
-    int Version { get; set; }
-}
-
-[PipelineBehaviorOrder(3), PipelineBehaviorResponseAdaptor(typeof(Result<>))]
-public class AuditBehaviorInner<TRequest, TResponse> : IPipelineBehavior<TRequest, Result<TResponse>>
+[PipelineBehaviorOrder(3)]
+public class AuditBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, TResponse>
     where TRequest : IAuditableRequest
-    where TResponse : IVersionedResponse
 {
-    public async Task<Result<TResponse>> Handle(TRequest request, RequestHandlerDelegate<Result<TResponse>> next, CancellationToken cancellationToken = default)
+    public async Task<TResponse> Handle(TRequest request, RequestHandlerDelegate<TResponse> next, CancellationToken cancellationToken = default)
     {
         Console.WriteLine($"Audit: Processing request at {request.Timestamp}");
         var result = await next();
-        if (result.IsSuccess)
-            return Result.Fail("failed");
-        
-        var versionedResponse = result.Value;
-        versionedResponse.Version++;
-        Console.WriteLine($"Result = {versionedResponse.Version}");
         Console.WriteLine($"Audit: Completed request at {request.Timestamp}");
         return result;
     }
 }
 
+[PipelineBehaviorOrder(4), PipelineBehaviorResponseAdaptor(typeof(Result<>))]
+public class VersionIncrementingBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, Result<TResponse>>
+    where TRequest : notnull
+    where TResponse : IVersionedResponse
+{
+    public async Task<Result<TResponse>> Handle(TRequest request, RequestHandlerDelegate<Result<TResponse>> next, CancellationToken cancellationToken = default)
+    {
+        Console.WriteLine("VersionTagging: Starting");
+        var result = await next();
+        if (!result.IsSuccess) 
+            return result;
+        
+        var versionedResponse = result.Value;
+        versionedResponse.Version++;
+        if (versionedResponse.Version > 100)
+            return Result.Fail("Max Version is 100"); // simulate a failed result
+        Console.WriteLine($"Version: {versionedResponse.Version}");
+        Console.WriteLine("VersionTagging: Completed");
+        return result;
+    }
+}
+
+// By default, PipelineBehaviorOrder is set to Int.MaxValue when attribute is missing 
 public class TransactionBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, TResponse>
     where TRequest : ITransactionalRequest
 {

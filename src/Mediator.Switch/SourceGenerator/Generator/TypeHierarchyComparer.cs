@@ -3,6 +3,11 @@ using Microsoft.CodeAnalysis;
 
 namespace Mediator.Switch.SourceGenerator.Generator;
 
+public static class Comparers
+{
+    public static readonly TypeHierarchyComparer TypeHierarchyComparer = new();
+}
+
 public class TypeHierarchyComparer : IComparer<ITypeSymbol>
 {
     public int Compare(ITypeSymbol? x, ITypeSymbol? y)
