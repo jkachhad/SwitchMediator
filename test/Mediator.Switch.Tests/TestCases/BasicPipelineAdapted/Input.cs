@@ -1,4 +1,5 @@
 using Mediator.Switch;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Test.BasicPipelineAdapted;
@@ -31,7 +32,7 @@ public class Ping : IRequest<Result<VersionedResponse>>;
 
 public class PingHandler : IRequestHandler<Ping, Result<VersionedResponse>>
 {
-    public Task<Result<VersionedResponse>> Handle(Ping request) => Task.FromResult(new Result<VersionedResponse>(new VersionedResponse { Version = 42 }));
+    public Task<Result<VersionedResponse>> Handle(Ping request, CancellationToken cancellationToken = default) => Task.FromResult(new Result<VersionedResponse>(new VersionedResponse { Version = 42 }));
 }
 
 [PipelineBehaviorResponseAdaptor(typeof(Result<>))]
@@ -39,7 +40,7 @@ public class GenericBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, 
     where TRequest : notnull
     where TResponse : IVersionedResponse
 {
-    public async Task<Result<TResponse>> Handle(TRequest request, RequestHandlerDelegate<Result<TResponse>> next)
+    public async Task<Result<TResponse>> Handle(TRequest request, RequestHandlerDelegate<Result<TResponse>> next, CancellationToken cancellationToken = default)
     {
         return await next();
     }

@@ -1,5 +1,6 @@
 using Mediator.Switch;
 using System;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Test.PolymorphicDispatch;
@@ -33,7 +34,7 @@ public class CarRequest : VehicleRequest { public int Doors { get; set; } }
 // Handler specifically for DogRequest
 public class DogRequestHandler : IRequestHandler<DogRequest, string>
 {
-    public Task<string> Handle(DogRequest request)
+    public Task<string> Handle(DogRequest request, CancellationToken cancellationToken = default)
     {
         return Task.FromResult($"{request.Name} says Woof! (Good boy status: {request.IsGoodBoy})");
     }
@@ -42,7 +43,7 @@ public class DogRequestHandler : IRequestHandler<DogRequest, string>
 // Handler specifically for CatRequest
 public class CatRequestHandler : IRequestHandler<CatRequest, string>
 {
-    public Task<string> Handle(CatRequest request)
+    public Task<string> Handle(CatRequest request, CancellationToken cancellationToken = default)
     {
         return Task.FromResult($"{request.Name} says Meow! (Lives: {request.LivesRemaining})");
     }
@@ -50,7 +51,7 @@ public class CatRequestHandler : IRequestHandler<CatRequest, string>
 
 public class GenericAnimalRequestHandler : IRequestHandler<AnimalRequest, string>
 {
-     public Task<string> Handle(AnimalRequest request)
+     public Task<string> Handle(AnimalRequest request, CancellationToken cancellationToken = default)
      {
          return Task.FromResult($"Generic handler: An animal named {request.Name}");
      }
@@ -59,7 +60,7 @@ public class GenericAnimalRequestHandler : IRequestHandler<AnimalRequest, string
 // Handler for the unrelated CarRequest
 public class CarRequestHandler : IRequestHandler<CarRequest, double>
 {
-    public Task<double> Handle(CarRequest request) => Task.FromResult(42.0);
+    public Task<double> Handle(CarRequest request, CancellationToken cancellationToken = default) => Task.FromResult(42.0);
 }
 
 
@@ -89,7 +90,7 @@ public class OrderPlacedEvent : DomainEvent
 // Handler specifically for UserCreatedEvent
 public class UserCreatedEmailHandler : INotificationHandler<UserCreatedEvent>
 {
-    public Task Handle(UserCreatedEvent notification)
+    public Task Handle(UserCreatedEvent notification, CancellationToken cancellationToken = default)
     {
         Console.WriteLine($"EMAIL: Welcome user {notification.UserId} created at {notification.Timestamp}");
         return Task.CompletedTask;
@@ -99,7 +100,7 @@ public class UserCreatedEmailHandler : INotificationHandler<UserCreatedEvent>
 // Handler specifically for OrderPlacedEvent
 public class OrderPlacedInventoryHandler : INotificationHandler<OrderPlacedEvent>
 {
-    public Task Handle(OrderPlacedEvent notification)
+    public Task Handle(OrderPlacedEvent notification, CancellationToken cancellationToken = default)
     {
         Console.WriteLine($"INVENTORY: Adjusting stock for order {notification.OrderId} placed at {notification.Timestamp}");
         return Task.CompletedTask;
@@ -108,7 +109,7 @@ public class OrderPlacedInventoryHandler : INotificationHandler<OrderPlacedEvent
 
 public class GenericDomainEventHandler : INotificationHandler<DomainEvent>
 {
-    public Task Handle(DomainEvent notification)
+    public Task Handle(DomainEvent notification, CancellationToken cancellationToken = default)
     {
         Console.WriteLine($"AUDIT: Domain event of type {notification.GetType().Name} occurred at {notification.Timestamp}");
         return Task.CompletedTask;
@@ -118,7 +119,7 @@ public class GenericDomainEventHandler : INotificationHandler<DomainEvent>
 // Handler also specifically for UserCreatedEvent (Multiple handlers for same notification)
 public class UserCreatedAnalyticsHandler : INotificationHandler<UserCreatedEvent>
 {
-     public Task Handle(UserCreatedEvent notification)
+     public Task Handle(UserCreatedEvent notification, CancellationToken cancellationToken = default)
     {
         Console.WriteLine($"ANALYTICS: Tracking creation for user {notification.UserId}");
         return Task.CompletedTask;

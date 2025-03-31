@@ -9,9 +9,10 @@
 
 using System;
 using System.Collections.Generic;
-using System.Threading.Tasks;
-using System.Runtime.CompilerServices;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace Mediator.Switch;
 
@@ -27,7 +28,7 @@ public class SwitchMediator : IMediator
 
     }
 
-    public async Task<TResponse> Send<TResponse>(IRequest<TResponse> request)
+    public async Task<TResponse> Send<TResponse>(IRequest<TResponse> request, CancellationToken cancellationToken = default)
     {
         switch (request)
         {
@@ -37,7 +38,7 @@ public class SwitchMediator : IMediator
         }
     }
 
-    public async Task Publish(INotification notification)
+    public async Task Publish(INotification notification, CancellationToken cancellationToken = default)
     {
         switch (notification)
         {

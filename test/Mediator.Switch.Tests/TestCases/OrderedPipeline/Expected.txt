@@ -9,9 +9,10 @@
 
 using System;
 using System.Collections.Generic;
-using System.Threading.Tasks;
-using System.Runtime.CompilerServices;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace Mediator.Switch;
 
@@ -20,35 +21,35 @@ namespace Mediator.Switch;
 public class SwitchMediator : IMediator
 {
     private readonly Test.Ordered.CalculationRequestHandler _test_Ordered_CalculationRequestHandler;
-    private readonly Test.Ordered.LoggingBehavior<Test.Ordered.CalculationRequest, int> _test_Ordered_LoggingBehavior__test_Ordered_CalculationRequest;
-    private readonly Test.Ordered.ValidationBehavior<Test.Ordered.CalculationRequest, int> _test_Ordered_ValidationBehavior__test_Ordered_CalculationRequest;
     private readonly Test.Ordered.MonitoringBehavior<Test.Ordered.CalculationRequest, int> _test_Ordered_MonitoringBehavior__test_Ordered_CalculationRequest;
+    private readonly Test.Ordered.ValidationBehavior<Test.Ordered.CalculationRequest, int> _test_Ordered_ValidationBehavior__test_Ordered_CalculationRequest;
+    private readonly Test.Ordered.LoggingBehavior<Test.Ordered.CalculationRequest, int> _test_Ordered_LoggingBehavior__test_Ordered_CalculationRequest;
 
     public SwitchMediator(
         Test.Ordered.CalculationRequestHandler test_Ordered_CalculationRequestHandler,
-        Test.Ordered.LoggingBehavior<Test.Ordered.CalculationRequest, int> test_Ordered_LoggingBehavior__test_Ordered_CalculationRequest,
+        Test.Ordered.MonitoringBehavior<Test.Ordered.CalculationRequest, int> test_Ordered_MonitoringBehavior__test_Ordered_CalculationRequest,
         Test.Ordered.ValidationBehavior<Test.Ordered.CalculationRequest, int> test_Ordered_ValidationBehavior__test_Ordered_CalculationRequest,
-        Test.Ordered.MonitoringBehavior<Test.Ordered.CalculationRequest, int> test_Ordered_MonitoringBehavior__test_Ordered_CalculationRequest)
+        Test.Ordered.LoggingBehavior<Test.Ordered.CalculationRequest, int> test_Ordered_LoggingBehavior__test_Ordered_CalculationRequest)
     {
         _test_Ordered_CalculationRequestHandler = test_Ordered_CalculationRequestHandler;
-        _test_Ordered_LoggingBehavior__test_Ordered_CalculationRequest = test_Ordered_LoggingBehavior__test_Ordered_CalculationRequest;
-        _test_Ordered_ValidationBehavior__test_Ordered_CalculationRequest = test_Ordered_ValidationBehavior__test_Ordered_CalculationRequest;
         _test_Ordered_MonitoringBehavior__test_Ordered_CalculationRequest = test_Ordered_MonitoringBehavior__test_Ordered_CalculationRequest;
+        _test_Ordered_ValidationBehavior__test_Ordered_CalculationRequest = test_Ordered_ValidationBehavior__test_Ordered_CalculationRequest;
+        _test_Ordered_LoggingBehavior__test_Ordered_CalculationRequest = test_Ordered_LoggingBehavior__test_Ordered_CalculationRequest;
     }
 
-    public async Task<TResponse> Send<TResponse>(IRequest<TResponse> request)
+    public async Task<TResponse> Send<TResponse>(IRequest<TResponse> request, CancellationToken cancellationToken = default)
     {
         switch (request)
         {
             case Test.Ordered.CalculationRequest test_Ordered_CalculationRequest:
                 return ToResponse<TResponse>(
-                    await HandleCalculationRequestWithBehaviors(test_Ordered_CalculationRequest));
+                    await HandleCalculationRequestWithBehaviors(test_Ordered_CalculationRequest, cancellationToken));
             default:
                 throw new ArgumentException($"No handler for {request.GetType().Name}");
         }
     }
 
-    public async Task Publish(INotification notification)
+    public async Task Publish(INotification notification, CancellationToken cancellationToken = default)
     {
         switch (notification)
         {
@@ -58,12 +59,18 @@ public class SwitchMediator : IMediator
         }
     }
 
-    private async Task<int> HandleCalculationRequestWithBehaviors(Test.Ordered.CalculationRequest request)
+    private async Task<int> HandleCalculationRequestWithBehaviors(
+        Test.Ordered.CalculationRequest request,
+        CancellationToken cancellationToken)
     {
-        return await _test_Ordered_MonitoringBehavior__test_Ordered_CalculationRequest.Handle(request, async () =>
-            await _test_Ordered_ValidationBehavior__test_Ordered_CalculationRequest.Handle(request, async () =>
+        return
             await _test_Ordered_LoggingBehavior__test_Ordered_CalculationRequest.Handle(request, async () =>
-            await _test_Ordered_CalculationRequestHandler.Handle(request))));
+            await _test_Ordered_ValidationBehavior__test_Ordered_CalculationRequest.Handle(request, async () =>
+            await _test_Ordered_MonitoringBehavior__test_Ordered_CalculationRequest.Handle(request, async () =>
+            /* Request Handler */ await _test_Ordered_CalculationRequestHandler.Handle(request, cancellationToken),
+            cancellationToken),
+            cancellationToken),
+            cancellationToken);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

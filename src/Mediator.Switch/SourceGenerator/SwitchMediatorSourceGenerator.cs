@@ -7,11 +7,6 @@ namespace Mediator.Switch.SourceGenerator
     [Generator]
     public class SwitchMediatorSourceGenerator : ISourceGenerator
     {
-        /*
-         * TODO:
-         *     - support CancellationToken in mediator pipelines / handlers. (check MediatR)
-         */
-        
         public void Initialize(GeneratorInitializationContext context)
         {
             context.RegisterForSyntaxNotifications(() => new SyntaxCollector());
