@@ -23,26 +23,23 @@ public interface IVersionedResponse
 
 // Request types
 [RequestHandler(typeof(GetUserRequestHandler))]
-public class GetUserRequest : IRequest<Result<User>>, IAuditableRequest
+public class GetUserRequest(int userId) : IRequest<Result<User>>, IAuditableRequest
 {
-    public int UserId { get; }
-    public DateTime Timestamp { get; }
-    public GetUserRequest(int userId) => (UserId, Timestamp) = (userId, DateTime.Now);
+    public int UserId { get; } = userId;
+    public DateTime Timestamp { get; } = DateTime.Now;
 }
 
 [RequestHandler(typeof(CreateOrderRequestHandler))]
-public class CreateOrderRequest : IRequest<int>, ITransactionalRequest
+public class CreateOrderRequest(string product) : IRequest<int>, ITransactionalRequest
 {
-    public string Product { get; }
-    public Guid TransactionId { get; }
-    public CreateOrderRequest(string product) => (Product, TransactionId) = (product, Guid.NewGuid());
+    public string Product { get; } = product;
+    public Guid TransactionId { get; } = Guid.NewGuid();
 }
 
 // Notification type
-public class UserLoggedInEvent : INotification
+public class UserLoggedInEvent(int userId) : INotification
 {
-    public int UserId { get; }
-    public UserLoggedInEvent(int userId) => UserId = userId;
+    public int UserId { get; } = userId;
 }
 
 // Response models
@@ -117,21 +114,15 @@ public class LoggingBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, 
 }
 
 [PipelineBehaviorOrder(2)]
-public class ValidationBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, TResponse>
+public class ValidationBehavior<TRequest, TResponse>(IValidator<TRequest>? validator = null)
+    : IPipelineBehavior<TRequest, TResponse>
     where TRequest : notnull
 {
-    private readonly IValidator<TRequest>? _validator;
-
-    public ValidationBehavior(IValidator<TRequest>? validator = null)
-    {
-        _validator = validator;
-    }
-
     public async Task<TResponse> Handle(TRequest request, RequestHandlerDelegate<TResponse> next, CancellationToken cancellationToken = default)
     {
-        if (_validator != null)
+        if (validator != null)
         {
-            var result = await _validator.ValidateAsync(request, cancellationToken);
+            var result = await validator.ValidateAsync(request, cancellationToken);
             if (!result.IsValid)
             {
                 throw new ValidationException(result.Errors);

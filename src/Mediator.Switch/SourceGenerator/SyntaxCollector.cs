@@ -5,7 +5,7 @@ namespace Mediator.Switch.SourceGenerator;
 
 public class SyntaxCollector : ISyntaxReceiver
 {
-    public List<ClassDeclarationSyntax> Classes { get; } = new();
+    public List<ClassDeclarationSyntax> Classes { get; } = [];
 
     public void OnVisitSyntaxNode(SyntaxNode node)
     {

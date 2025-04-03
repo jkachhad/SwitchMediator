@@ -2,12 +2,7 @@ using Microsoft.CodeAnalysis;
 
 namespace Mediator.Switch.SourceGenerator.Exceptions;
 
-public class SourceGenerationException : Exception
+public class SourceGenerationException(string errorMessage, Location location) : Exception(errorMessage)
 {
-    public Location Location { get; }
-
-    public SourceGenerationException(string errorMessage, Location location) : base(errorMessage)
-    {
-        Location = location;
-    }
+    public Location Location { get; } = location;
 }
