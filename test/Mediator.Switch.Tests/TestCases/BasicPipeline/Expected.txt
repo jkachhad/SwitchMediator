@@ -31,13 +31,13 @@ public class SwitchMediator : IMediator
         _test_BasicPipeline_GenericBehavior__test_BasicPipeline_Ping = test_BasicPipeline_GenericBehavior__test_BasicPipeline_Ping;
     }
 
-    public async Task<TResponse> Send<TResponse>(IRequest<TResponse> request, CancellationToken cancellationToken = default)
+    public Task<TResponse> Send<TResponse>(IRequest<TResponse> request, CancellationToken cancellationToken = default)
     {
         switch (request)
         {
             case Test.BasicPipeline.Ping test_BasicPipeline_Ping:
-                return ToResponse<TResponse>(
-                    await HandlePingWithBehaviors(test_BasicPipeline_Ping, cancellationToken));
+                return ToResponse<Task<TResponse>>(
+                    HandlePingWithBehaviors(test_BasicPipeline_Ping, cancellationToken));
             default:
                 throw new ArgumentException($"No handler for {request.GetType().Name}");
         }
@@ -53,13 +53,13 @@ public class SwitchMediator : IMediator
         }
     }
 
-    private async Task<string> HandlePingWithBehaviors(
+    private Task<string> HandlePingWithBehaviors(
         Test.BasicPipeline.Ping request,
         CancellationToken cancellationToken)
     {
         return
-            await _test_BasicPipeline_GenericBehavior__test_BasicPipeline_Ping.Handle(request, async () =>
-            /* Request Handler */ await _test_BasicPipeline_PingHandler.Handle(request, cancellationToken),
+            _test_BasicPipeline_GenericBehavior__test_BasicPipeline_Ping.Handle(request, () =>
+            /* Request Handler */ _test_BasicPipeline_PingHandler.Handle(request, cancellationToken),
             cancellationToken);
     }
 

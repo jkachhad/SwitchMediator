@@ -28,13 +28,13 @@ public class SwitchMediator : IMediator
         _test_Basic_PingHandler = test_Basic_PingHandler;
     }
 
-    public async Task<TResponse> Send<TResponse>(IRequest<TResponse> request, CancellationToken cancellationToken = default)
+    public Task<TResponse> Send<TResponse>(IRequest<TResponse> request, CancellationToken cancellationToken = default)
     {
         switch (request)
         {
             case Test.Basic.Ping test_Basic_Ping:
-                return ToResponse<TResponse>(
-                    await HandlePingWithBehaviors(test_Basic_Ping, cancellationToken));
+                return ToResponse<Task<TResponse>>(
+                    HandlePingWithBehaviors(test_Basic_Ping, cancellationToken));
             default:
                 throw new ArgumentException($"No handler for {request.GetType().Name}");
         }
@@ -50,12 +50,12 @@ public class SwitchMediator : IMediator
         }
     }
 
-    private async Task<string> HandlePingWithBehaviors(
+    private Task<string> HandlePingWithBehaviors(
         Test.Basic.Ping request,
         CancellationToken cancellationToken)
     {
         return
-            /* Request Handler */ await _test_Basic_PingHandler.Handle(request, cancellationToken);
+            /* Request Handler */ _test_Basic_PingHandler.Handle(request, cancellationToken);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
