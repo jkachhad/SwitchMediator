@@ -1,8 +1,4 @@
-using Mediator.Switch;
-using System.Threading;
-using System.Threading.Tasks;
-
-namespace Test.MultipleRequests;
+namespace Mediator.Switch.Tests.TestCases.MultipleRequests;
 
 // First Request
 public class GetProductRequest : IRequest<string>

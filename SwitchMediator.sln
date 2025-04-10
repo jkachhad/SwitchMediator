@@ -2,7 +2,7 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Sample.ConsoleApp", "src\Sample.ConsoleApp\Sample.ConsoleApp.csproj", "{AC9E0690-6326-4AF5-B067-DF4BC6E1E8CA}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Mediator.Switch", "src\Mediator.Switch\Mediator.Switch.csproj", "{38F93217-BFA4-48AC-90FE-F325F3B6A0E6}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Mediator.Switch.SourceGenerator", "src\Mediator.Switch.SourceGenerator\Mediator.Switch.SourceGenerator.csproj", "{38F93217-BFA4-48AC-90FE-F325F3B6A0E6}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Mediator.Switch.Tests", "test\Mediator.Switch.Tests\Mediator.Switch.Tests.csproj", "{2DCBAB87-93B4-402B-8069-4DEDC74989FF}"
 EndProject
@@ -12,6 +12,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".scripts", ".scripts", "{26
 	ProjectSection(SolutionItems) = preProject
 		scripts\publish.sh = scripts\publish.sh
 	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Mediator.Switch", "Mediator.Switch\Mediator.Switch.csproj", "{CAF19E98-2C50-4B9D-B15D-F73606FBFE8E}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -35,5 +37,9 @@ Global
 		{3D567832-FBB1-4345-B3D8-52B6C2BCBF8E}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{3D567832-FBB1-4345-B3D8-52B6C2BCBF8E}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{3D567832-FBB1-4345-B3D8-52B6C2BCBF8E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{CAF19E98-2C50-4B9D-B15D-F73606FBFE8E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CAF19E98-2C50-4B9D-B15D-F73606FBFE8E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CAF19E98-2C50-4B9D-B15D-F73606FBFE8E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CAF19E98-2C50-4B9D-B15D-F73606FBFE8E}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

@@ -1,8 +1,4 @@
-using Mediator.Switch;
-using System.Threading;
-using System.Threading.Tasks;
-
-namespace Test.AbstractsIgnored;
+namespace Mediator.Switch.Tests.TestCases.GenericsIgnored;
 
 public class Ping : IRequest<string>;
 public abstract class PingHandler : IRequestHandler<Ping, string>

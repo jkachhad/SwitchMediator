@@ -1,9 +1,4 @@
-using Mediator.Switch;
-using System;
-using System.Threading;
-using System.Threading.Tasks;
-
-namespace Test.Notifications;
+namespace Mediator.Switch.Tests.TestCases.Notifications;
 
 // The Notification
 public class OrderCreatedEvent : INotification
