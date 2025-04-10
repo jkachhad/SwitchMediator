@@ -25,7 +25,7 @@
     </ItemGroup>
     
     <ItemGroup>
-      <ProjectReference Include="..\..\Mediator.Switch\Mediator.Switch.csproj" />
+      <ProjectReference Include="..\Mediator.Switch\Mediator.Switch.csproj" />
     </ItemGroup>
     
 </Project>
