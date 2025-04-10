@@ -3,7 +3,7 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Test.PolymorphicDispatch;
+namespace Tests.PolymorphicRequests;
 
 // --- Polymorphic Requests ---
 

@@ -1,8 +1,9 @@
 using Mediator.Switch;
+using System;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Test.Basic;
+namespace Tests.Basic;
 
 [RequestHandler(typeof(PingHandler))]
 public class Ping : IRequest<string>;

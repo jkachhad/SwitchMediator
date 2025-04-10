@@ -3,7 +3,7 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Test.Notifications;
+namespace Tests.Notifications;
 
 // The Notification
 public class OrderCreatedEvent : INotification

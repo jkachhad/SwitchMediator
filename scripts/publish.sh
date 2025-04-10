@@ -32,6 +32,9 @@ REPO_ROOT=$(realpath "$SCRIPT_DIR/..") # Assumes script is in 'scripts' folder o
 CORE_PROJ_NAME="Mediator.Switch"
 CORE_PROJ_PATH="$REPO_ROOT/src/$CORE_PROJ_NAME/$CORE_PROJ_NAME.csproj"
 
+SGEN_PROJ_NAME="Mediator.Switch.SourceGenerator"
+SGEN_PROJ_PATH="$REPO_ROOT/src/$SGEN_PROJ_NAME/$SGEN_PROJ_NAME.csproj"
+
 EXT_PROJ_NAME="Mediator.Switch.Extensions.Microsoft.DependencyInjection"
 EXT_PROJ_PATH="$REPO_ROOT/src/$EXT_PROJ_NAME/$EXT_PROJ_NAME.csproj"
 
@@ -43,6 +46,10 @@ if [ ! -f "$CORE_PROJ_PATH" ]; then
     echo "Error: Core project file not found at $CORE_PROJ_PATH"
     exit 1
 fi
+if [ ! -f "$SGEN_PROJ_PATH" ]; then
+    echo "Error: Core project file not found at $SGEN_PROJ_PATH"
+    exit 1
+fi
 if [ ! -f "$EXT_PROJ_PATH" ]; then
     echo "Error: Extensions project file not found at $EXT_PROJ_PATH"
     exit 1
@@ -52,6 +59,7 @@ echo "--------------------------------------------------"
 echo " Starting NuGet Publish Process"
 echo " Version:        $VERSION"
 echo " Core Project:   $CORE_PROJ_PATH"
+echo " SrcGen Project: $SGEN_PROJ_PATH"
 echo " Ext Project:    $EXT_PROJ_PATH"
 echo " Artifacts Dir:  $ARTIFACTS_DIR"
 echo "--------------------------------------------------"
@@ -61,17 +69,19 @@ echo Cleaning previous artifacts...
 rm -rf "$ARTIFACTS_DIR"
 mkdir -p "$ARTIFACTS_DIR"
 
-# Clean solution/projects (optional but recommended)
-# dotnet clean "$REPO_ROOT/SwitchMediator.sln" -c Release # If you have a solution file
 dotnet clean "$CORE_PROJ_PATH" -c Release
+dotnet clean "$SGEN_PROJ_PATH" -c Release
 dotnet clean "$EXT_PROJ_PATH" -c Release
 
 # --- Build & Pack ---
-# Note: `dotnet pack` automatically builds in Release config by default if -c is specified.
-# We pass the version via /p:PackageVersion to override what's in the csproj for this specific pack operation.
-
 echo "Packing $CORE_PROJ_NAME version $VERSION..."
 dotnet pack "$CORE_PROJ_PATH" \
+  -c Release \
+  /p:PackageVersion="$VERSION" \
+  --output "$ARTIFACTS_DIR"
+
+echo "Packing $SGEN_PROJ_NAME version $VERSION..."
+dotnet pack "$SGEN_PROJ_PATH" \
   -c Release \
   /p:PackageVersion="$VERSION" \
   --output "$ARTIFACTS_DIR"

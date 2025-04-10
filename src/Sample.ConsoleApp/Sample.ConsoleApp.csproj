@@ -15,12 +15,9 @@
     </ItemGroup>
 
     <ItemGroup>
-        <Analyzer Include="../Mediator.Switch/bin/Debug/netstandard2.0/Mediator.Switch.dll" />
+      <ProjectReference Include="..\..\Mediator.Switch\Mediator.Switch.csproj" />
+      <ProjectReference Include="..\Mediator.Switch.Extensions.Microsoft.DependencyInjection\Mediator.Switch.Extensions.Microsoft.DependencyInjection.csproj" />
+      <ProjectReference Include="..\Mediator.Switch.SourceGenerator\Mediator.Switch.SourceGenerator.csproj" OutputItemType="Analyzer" />
     </ItemGroup>
 
-    <ItemGroup>
-      <ProjectReference Include="..\Mediator.Switch.Extensions.Microsoft.DependencyInjection\Mediator.Switch.Extensions.Microsoft.DependencyInjection.csproj" />
-      <ProjectReference Include="..\Mediator.Switch\Mediator.Switch.csproj" />
-    </ItemGroup>
-    
 </Project>

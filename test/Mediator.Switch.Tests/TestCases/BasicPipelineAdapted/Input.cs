@@ -1,8 +1,9 @@
 using Mediator.Switch;
+using System;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Test.BasicPipelineAdapted;
+namespace Tests.BasicPipelineAdapted;
 
 public interface IResult<out T>
 {

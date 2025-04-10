@@ -20,36 +20,36 @@ namespace Mediator.Switch;
 
 public class SwitchMediator : IMediator
 {
-    private readonly Test.Constrained.SpecialProcessRequestHandler _test_Constrained_SpecialProcessRequestHandler;
-    private readonly Test.Constrained.NormalRequestHandler _test_Constrained_NormalRequestHandler;
-    private readonly Test.Constrained.GenericLoggingBehavior<Test.Constrained.SpecialProcessRequest, System.Guid> _test_Constrained_GenericLoggingBehavior__test_Constrained_SpecialProcessRequest;
-    private readonly Test.Constrained.SpecialProcessingBehavior<Test.Constrained.SpecialProcessRequest, System.Guid> _test_Constrained_SpecialProcessingBehavior__test_Constrained_SpecialProcessRequest;
-    private readonly Test.Constrained.GenericLoggingBehavior<Test.Constrained.NormalRequest, int> _test_Constrained_GenericLoggingBehavior__test_Constrained_NormalRequest;
+    private readonly Tests.ConstrainedPipeline.SpecialProcessRequestHandler _tests_ConstrainedPipeline_SpecialProcessRequestHandler;
+    private readonly Tests.ConstrainedPipeline.NormalRequestHandler _tests_ConstrainedPipeline_NormalRequestHandler;
+    private readonly Tests.ConstrainedPipeline.GenericLoggingBehavior<Tests.ConstrainedPipeline.SpecialProcessRequest, System.Guid> _tests_ConstrainedPipeline_GenericLoggingBehavior__tests_ConstrainedPipeline_SpecialProcessRequest;
+    private readonly Tests.ConstrainedPipeline.SpecialProcessingBehavior<Tests.ConstrainedPipeline.SpecialProcessRequest, System.Guid> _tests_ConstrainedPipeline_SpecialProcessingBehavior__tests_ConstrainedPipeline_SpecialProcessRequest;
+    private readonly Tests.ConstrainedPipeline.GenericLoggingBehavior<Tests.ConstrainedPipeline.NormalRequest, int> _tests_ConstrainedPipeline_GenericLoggingBehavior__tests_ConstrainedPipeline_NormalRequest;
 
     public SwitchMediator(
-        Test.Constrained.SpecialProcessRequestHandler test_Constrained_SpecialProcessRequestHandler,
-        Test.Constrained.NormalRequestHandler test_Constrained_NormalRequestHandler,
-        Test.Constrained.GenericLoggingBehavior<Test.Constrained.SpecialProcessRequest, System.Guid> test_Constrained_GenericLoggingBehavior__test_Constrained_SpecialProcessRequest,
-        Test.Constrained.SpecialProcessingBehavior<Test.Constrained.SpecialProcessRequest, System.Guid> test_Constrained_SpecialProcessingBehavior__test_Constrained_SpecialProcessRequest,
-        Test.Constrained.GenericLoggingBehavior<Test.Constrained.NormalRequest, int> test_Constrained_GenericLoggingBehavior__test_Constrained_NormalRequest)
+        Tests.ConstrainedPipeline.SpecialProcessRequestHandler tests_ConstrainedPipeline_SpecialProcessRequestHandler,
+        Tests.ConstrainedPipeline.NormalRequestHandler tests_ConstrainedPipeline_NormalRequestHandler,
+        Tests.ConstrainedPipeline.GenericLoggingBehavior<Tests.ConstrainedPipeline.SpecialProcessRequest, System.Guid> tests_ConstrainedPipeline_GenericLoggingBehavior__tests_ConstrainedPipeline_SpecialProcessRequest,
+        Tests.ConstrainedPipeline.SpecialProcessingBehavior<Tests.ConstrainedPipeline.SpecialProcessRequest, System.Guid> tests_ConstrainedPipeline_SpecialProcessingBehavior__tests_ConstrainedPipeline_SpecialProcessRequest,
+        Tests.ConstrainedPipeline.GenericLoggingBehavior<Tests.ConstrainedPipeline.NormalRequest, int> tests_ConstrainedPipeline_GenericLoggingBehavior__tests_ConstrainedPipeline_NormalRequest)
     {
-        _test_Constrained_SpecialProcessRequestHandler = test_Constrained_SpecialProcessRequestHandler;
-        _test_Constrained_NormalRequestHandler = test_Constrained_NormalRequestHandler;
-        _test_Constrained_GenericLoggingBehavior__test_Constrained_SpecialProcessRequest = test_Constrained_GenericLoggingBehavior__test_Constrained_SpecialProcessRequest;
-        _test_Constrained_SpecialProcessingBehavior__test_Constrained_SpecialProcessRequest = test_Constrained_SpecialProcessingBehavior__test_Constrained_SpecialProcessRequest;
-        _test_Constrained_GenericLoggingBehavior__test_Constrained_NormalRequest = test_Constrained_GenericLoggingBehavior__test_Constrained_NormalRequest;
+        _tests_ConstrainedPipeline_SpecialProcessRequestHandler = tests_ConstrainedPipeline_SpecialProcessRequestHandler;
+        _tests_ConstrainedPipeline_NormalRequestHandler = tests_ConstrainedPipeline_NormalRequestHandler;
+        _tests_ConstrainedPipeline_GenericLoggingBehavior__tests_ConstrainedPipeline_SpecialProcessRequest = tests_ConstrainedPipeline_GenericLoggingBehavior__tests_ConstrainedPipeline_SpecialProcessRequest;
+        _tests_ConstrainedPipeline_SpecialProcessingBehavior__tests_ConstrainedPipeline_SpecialProcessRequest = tests_ConstrainedPipeline_SpecialProcessingBehavior__tests_ConstrainedPipeline_SpecialProcessRequest;
+        _tests_ConstrainedPipeline_GenericLoggingBehavior__tests_ConstrainedPipeline_NormalRequest = tests_ConstrainedPipeline_GenericLoggingBehavior__tests_ConstrainedPipeline_NormalRequest;
     }
 
     public Task<TResponse> Send<TResponse>(IRequest<TResponse> request, CancellationToken cancellationToken = default)
     {
         switch (request)
         {
-            case Test.Constrained.NormalRequest test_Constrained_NormalRequest:
+            case Tests.ConstrainedPipeline.NormalRequest tests_ConstrainedPipeline_NormalRequest:
                 return ToResponse<Task<TResponse>>(
-                    HandleNormalRequestWithBehaviors(test_Constrained_NormalRequest, cancellationToken));
-            case Test.Constrained.SpecialProcessRequest test_Constrained_SpecialProcessRequest:
+                    HandleNormalRequestWithBehaviors(tests_ConstrainedPipeline_NormalRequest, cancellationToken));
+            case Tests.ConstrainedPipeline.SpecialProcessRequest tests_ConstrainedPipeline_SpecialProcessRequest:
                 return ToResponse<Task<TResponse>>(
-                    HandleSpecialProcessRequestWithBehaviors(test_Constrained_SpecialProcessRequest, cancellationToken));
+                    HandleSpecialProcessRequestWithBehaviors(tests_ConstrainedPipeline_SpecialProcessRequest, cancellationToken));
             default:
                 throw new ArgumentException($"No handler for {request.GetType().Name}");
         }
@@ -66,24 +66,24 @@ public class SwitchMediator : IMediator
     }
 
     private Task<System.Guid> HandleSpecialProcessRequestWithBehaviors(
-        Test.Constrained.SpecialProcessRequest request,
+        Tests.ConstrainedPipeline.SpecialProcessRequest request,
         CancellationToken cancellationToken)
     {
         return
-            _test_Constrained_SpecialProcessingBehavior__test_Constrained_SpecialProcessRequest.Handle(request, () =>
-            _test_Constrained_GenericLoggingBehavior__test_Constrained_SpecialProcessRequest.Handle(request, () =>
-            /* Request Handler */ _test_Constrained_SpecialProcessRequestHandler.Handle(request, cancellationToken),
+            _tests_ConstrainedPipeline_SpecialProcessingBehavior__tests_ConstrainedPipeline_SpecialProcessRequest.Handle(request, () =>
+            _tests_ConstrainedPipeline_GenericLoggingBehavior__tests_ConstrainedPipeline_SpecialProcessRequest.Handle(request, () =>
+            /* Request Handler */ _tests_ConstrainedPipeline_SpecialProcessRequestHandler.Handle(request, cancellationToken),
             cancellationToken),
             cancellationToken);
     }
 
     private Task<int> HandleNormalRequestWithBehaviors(
-        Test.Constrained.NormalRequest request,
+        Tests.ConstrainedPipeline.NormalRequest request,
         CancellationToken cancellationToken)
     {
         return
-            _test_Constrained_GenericLoggingBehavior__test_Constrained_NormalRequest.Handle(request, () =>
-            /* Request Handler */ _test_Constrained_NormalRequestHandler.Handle(request, cancellationToken),
+            _tests_ConstrainedPipeline_GenericLoggingBehavior__tests_ConstrainedPipeline_NormalRequest.Handle(request, () =>
+            /* Request Handler */ _tests_ConstrainedPipeline_NormalRequestHandler.Handle(request, cancellationToken),
             cancellationToken);
     }
 

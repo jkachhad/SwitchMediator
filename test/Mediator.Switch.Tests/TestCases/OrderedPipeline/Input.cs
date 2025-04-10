@@ -3,7 +3,7 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Test.Ordered;
+namespace Tests.OrderedPipeline;
 
 // The Request
 public class CalculationRequest : IRequest<int>

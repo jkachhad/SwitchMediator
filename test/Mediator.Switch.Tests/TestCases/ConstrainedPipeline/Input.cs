@@ -3,7 +3,7 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Test.Constrained;
+namespace Tests.ConstrainedPipeline;
 
 // Marker interface for constraint
 public interface ISpecialProcessingRequired { }
