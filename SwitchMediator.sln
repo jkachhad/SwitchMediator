@@ -15,6 +15,14 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".scripts", ".scripts", "{26
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Mediator.Switch", "Mediator.Switch\Mediator.Switch.csproj", "{CAF19E98-2C50-4B9D-B15D-F73606FBFE8E}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".github", ".github", "{07C1945F-F0B2-4E76-927C-0105DABC0098}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "workflows", "workflows", "{EFECD70B-6FDE-4BE5-9690-8669FE53204A}"
+	ProjectSection(SolutionItems) = preProject
+		.github\workflows\dotnet.yml = .github\workflows\dotnet.yml
+		.github\workflows\publish.yml = .github\workflows\publish.yml
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -41,5 +49,8 @@ Global
 		{CAF19E98-2C50-4B9D-B15D-F73606FBFE8E}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{CAF19E98-2C50-4B9D-B15D-F73606FBFE8E}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{CAF19E98-2C50-4B9D-B15D-F73606FBFE8E}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{EFECD70B-6FDE-4BE5-9690-8669FE53204A} = {07C1945F-F0B2-4E76-927C-0105DABC0098}
 	EndGlobalSection
 EndGlobal
