@@ -1,4 +1,9 @@
-namespace Mediator.Switch.Tests.TestCases.OrderedPipeline;
+using Mediator.Switch;
+using System;
+using System.Threading;
+using System.Threading.Tasks;
+
+namespace Tests.OrderedPipeline;
 
 // The Request
 public class CalculationRequest : IRequest<int>

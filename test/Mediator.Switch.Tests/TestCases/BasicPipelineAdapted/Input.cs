@@ -1,4 +1,9 @@
-namespace Mediator.Switch.Tests.TestCases.BasicPipelineAdapted;
+using Mediator.Switch;
+using System;
+using System.Threading;
+using System.Threading.Tasks;
+
+namespace Tests.BasicPipelineAdapted;
 
 public interface IResult<out T>
 {

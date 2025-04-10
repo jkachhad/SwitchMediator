@@ -20,30 +20,30 @@ namespace Mediator.Switch;
 
 public class SwitchMediator : IMediator
 {
-    private readonly Test.Ordered.CalculationRequestHandler _test_Ordered_CalculationRequestHandler;
-    private readonly Test.Ordered.MonitoringBehavior<Test.Ordered.CalculationRequest, int> _test_Ordered_MonitoringBehavior__test_Ordered_CalculationRequest;
-    private readonly Test.Ordered.ValidationBehavior<Test.Ordered.CalculationRequest, int> _test_Ordered_ValidationBehavior__test_Ordered_CalculationRequest;
-    private readonly Test.Ordered.LoggingBehavior<Test.Ordered.CalculationRequest, int> _test_Ordered_LoggingBehavior__test_Ordered_CalculationRequest;
+    private readonly Tests.OrderedPipeline.CalculationRequestHandler _tests_OrderedPipeline_CalculationRequestHandler;
+    private readonly Tests.OrderedPipeline.MonitoringBehavior<Tests.OrderedPipeline.CalculationRequest, int> _tests_OrderedPipeline_MonitoringBehavior__tests_OrderedPipeline_CalculationRequest;
+    private readonly Tests.OrderedPipeline.ValidationBehavior<Tests.OrderedPipeline.CalculationRequest, int> _tests_OrderedPipeline_ValidationBehavior__tests_OrderedPipeline_CalculationRequest;
+    private readonly Tests.OrderedPipeline.LoggingBehavior<Tests.OrderedPipeline.CalculationRequest, int> _tests_OrderedPipeline_LoggingBehavior__tests_OrderedPipeline_CalculationRequest;
 
     public SwitchMediator(
-        Test.Ordered.CalculationRequestHandler test_Ordered_CalculationRequestHandler,
-        Test.Ordered.MonitoringBehavior<Test.Ordered.CalculationRequest, int> test_Ordered_MonitoringBehavior__test_Ordered_CalculationRequest,
-        Test.Ordered.ValidationBehavior<Test.Ordered.CalculationRequest, int> test_Ordered_ValidationBehavior__test_Ordered_CalculationRequest,
-        Test.Ordered.LoggingBehavior<Test.Ordered.CalculationRequest, int> test_Ordered_LoggingBehavior__test_Ordered_CalculationRequest)
+        Tests.OrderedPipeline.CalculationRequestHandler tests_OrderedPipeline_CalculationRequestHandler,
+        Tests.OrderedPipeline.MonitoringBehavior<Tests.OrderedPipeline.CalculationRequest, int> tests_OrderedPipeline_MonitoringBehavior__tests_OrderedPipeline_CalculationRequest,
+        Tests.OrderedPipeline.ValidationBehavior<Tests.OrderedPipeline.CalculationRequest, int> tests_OrderedPipeline_ValidationBehavior__tests_OrderedPipeline_CalculationRequest,
+        Tests.OrderedPipeline.LoggingBehavior<Tests.OrderedPipeline.CalculationRequest, int> tests_OrderedPipeline_LoggingBehavior__tests_OrderedPipeline_CalculationRequest)
     {
-        _test_Ordered_CalculationRequestHandler = test_Ordered_CalculationRequestHandler;
-        _test_Ordered_MonitoringBehavior__test_Ordered_CalculationRequest = test_Ordered_MonitoringBehavior__test_Ordered_CalculationRequest;
-        _test_Ordered_ValidationBehavior__test_Ordered_CalculationRequest = test_Ordered_ValidationBehavior__test_Ordered_CalculationRequest;
-        _test_Ordered_LoggingBehavior__test_Ordered_CalculationRequest = test_Ordered_LoggingBehavior__test_Ordered_CalculationRequest;
+        _tests_OrderedPipeline_CalculationRequestHandler = tests_OrderedPipeline_CalculationRequestHandler;
+        _tests_OrderedPipeline_MonitoringBehavior__tests_OrderedPipeline_CalculationRequest = tests_OrderedPipeline_MonitoringBehavior__tests_OrderedPipeline_CalculationRequest;
+        _tests_OrderedPipeline_ValidationBehavior__tests_OrderedPipeline_CalculationRequest = tests_OrderedPipeline_ValidationBehavior__tests_OrderedPipeline_CalculationRequest;
+        _tests_OrderedPipeline_LoggingBehavior__tests_OrderedPipeline_CalculationRequest = tests_OrderedPipeline_LoggingBehavior__tests_OrderedPipeline_CalculationRequest;
     }
 
     public Task<TResponse> Send<TResponse>(IRequest<TResponse> request, CancellationToken cancellationToken = default)
     {
         switch (request)
         {
-            case Test.Ordered.CalculationRequest test_Ordered_CalculationRequest:
+            case Tests.OrderedPipeline.CalculationRequest tests_OrderedPipeline_CalculationRequest:
                 return ToResponse<Task<TResponse>>(
-                    HandleCalculationRequestWithBehaviors(test_Ordered_CalculationRequest, cancellationToken));
+                    HandleCalculationRequestWithBehaviors(tests_OrderedPipeline_CalculationRequest, cancellationToken));
             default:
                 throw new ArgumentException($"No handler for {request.GetType().Name}");
         }
@@ -60,14 +60,14 @@ public class SwitchMediator : IMediator
     }
 
     private Task<int> HandleCalculationRequestWithBehaviors(
-        Test.Ordered.CalculationRequest request,
+        Tests.OrderedPipeline.CalculationRequest request,
         CancellationToken cancellationToken)
     {
         return
-            _test_Ordered_LoggingBehavior__test_Ordered_CalculationRequest.Handle(request, () =>
-            _test_Ordered_ValidationBehavior__test_Ordered_CalculationRequest.Handle(request, () =>
-            _test_Ordered_MonitoringBehavior__test_Ordered_CalculationRequest.Handle(request, () =>
-            /* Request Handler */ _test_Ordered_CalculationRequestHandler.Handle(request, cancellationToken),
+            _tests_OrderedPipeline_LoggingBehavior__tests_OrderedPipeline_CalculationRequest.Handle(request, () =>
+            _tests_OrderedPipeline_ValidationBehavior__tests_OrderedPipeline_CalculationRequest.Handle(request, () =>
+            _tests_OrderedPipeline_MonitoringBehavior__tests_OrderedPipeline_CalculationRequest.Handle(request, () =>
+            /* Request Handler */ _tests_OrderedPipeline_CalculationRequestHandler.Handle(request, cancellationToken),
             cancellationToken),
             cancellationToken),
             cancellationToken);

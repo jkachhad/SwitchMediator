@@ -1,4 +1,9 @@
-namespace Mediator.Switch.Tests.TestCases.ConstrainedPipeline;
+using Mediator.Switch;
+using System;
+using System.Threading;
+using System.Threading.Tasks;
+
+namespace Tests.ConstrainedPipeline;
 
 // Marker interface for constraint
 public interface ISpecialProcessingRequired { }

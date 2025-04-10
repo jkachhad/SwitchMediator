@@ -1,4 +1,9 @@
-namespace Mediator.Switch.Tests.TestCases.BasicPipeline;
+using Mediator.Switch;
+using System;
+using System.Threading;
+using System.Threading.Tasks;
+
+namespace Tests.BasicPipeline;
 
 public class Ping : IRequest<string>;
  

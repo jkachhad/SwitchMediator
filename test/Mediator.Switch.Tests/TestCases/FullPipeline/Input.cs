@@ -1,6 +1,10 @@
 using FluentValidation;
+using Mediator.Switch;
+using System;
+using System.Threading;
+using System.Threading.Tasks;
 
-namespace Mediator.Switch.Tests.TestCases.FullPipeline;
+namespace Tests.FullPipeline;
 
 #pragma warning disable CS1998
 

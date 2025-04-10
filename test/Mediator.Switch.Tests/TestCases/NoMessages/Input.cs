@@ -1,11 +1,9 @@
+using Mediator.Switch;
+using System;
+using System.Threading;
+using System.Threading.Tasks;
 
-
-// Might still be needed depending on how generator finds files
-
-namespace Mediator.Switch.Tests.TestCases.NoMessages;
-
-// This namespace intentionally contains no IRequest or INotification types.
-// Add some other unrelated types to ensure the generator doesn't crash.
+namespace Tests.NoMessages;
 
 public class UtilityClass
 {

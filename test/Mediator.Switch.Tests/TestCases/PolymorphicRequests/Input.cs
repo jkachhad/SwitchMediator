@@ -1,4 +1,9 @@
-namespace Mediator.Switch.Tests.TestCases.PolymorphicRequests;
+using Mediator.Switch;
+using System;
+using System.Threading;
+using System.Threading.Tasks;
+
+namespace Tests.PolymorphicRequests;
 
 // --- Polymorphic Requests ---
 
