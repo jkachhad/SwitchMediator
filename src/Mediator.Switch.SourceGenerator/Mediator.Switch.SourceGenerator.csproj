@@ -9,7 +9,6 @@
         <PackageId>Mediator.Switch.SourceGenerator</PackageId>
         <PackageTags>mediator cqrs switch pattern matching</PackageTags>
         <Description>A Mediator implementation using source generated C# switch expressions for handler dispatch enabling faster execution, improved startup times, step-into debuggability, and compile-time safety.</Description>
-        <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
         <IncludeBuildOutput>false</IncludeBuildOutput>
         <NoPackageAnalysis>true</NoPackageAnalysis>
         <DevelopmentDependency>true</DevelopmentDependency>
