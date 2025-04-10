@@ -60,14 +60,12 @@ Traditional mediator implementations often rely on runtime reflection to discove
 
 ## Installation
 
-You'll typically need three packages:
+You'll typically need two packages:
 
-1. **`Mediator.Switch`:** Contains the core interfaces (`IRequest`, `INotification`, `IPipelineBehavior`, etc.)
-2. **`Mediator.Switch.SourceGenerator`:** The SwitchMediator source generator itself, typically in the outermost project where your mediator related classes would reside. The source generator assembly does *not* get packaged with your application.
-3. **`Mediator.Switch.Extensions.Microsoft.DependencyInjection`:** (Optional) Provides extension methods for easy registration with the standard .NET DI container. You can always manually register your DI instances.
+1. **`Mediator.Switch.SourceGenerator`:** The SwitchMediator source generator itself, typically in the outermost project where your mediator related classes would reside. The source generator assembly does *not* get packaged with your application.
+2. **`Mediator.Switch.Extensions.Microsoft.DependencyInjection`:** (Optional) Provides extension methods for easy registration with the standard .NET DI container. You can always manually register your DI instances.
 
 ```bash
-dotnet add package Mediator.Switch
 dotnet add package Mediator.Switch.SourceGenerator
 dotnet add package Mediator.Switch.Extensions.Microsoft.DependencyInjection
 ```
