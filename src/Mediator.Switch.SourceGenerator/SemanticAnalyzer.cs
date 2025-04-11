@@ -51,57 +51,57 @@ public class SemanticAnalyzer
             ITypeSymbol TResponse) Request,
             List<(ITypeSymbol Class, ITypeSymbol TRequest, ITypeSymbol TResponse, IReadOnlyList<ITypeParameterSymbol>
                 TypeParameters)> Behaviors)> RequestBehaviors, List<ITypeSymbol> Notifications)
-        Analyze(List<ClassDeclarationSyntax> classes, CancellationToken cancellationToken)
+        Analyze(List<TypeDeclarationSyntax> types, CancellationToken cancellationToken)
     {
         var requests = new List<(ITypeSymbol Class, ITypeSymbol TResponse)>();
         var handlers = new List<(ITypeSymbol Class, ITypeSymbol TRequest, ITypeSymbol TResponse)>();
         var behaviors = new List<(ITypeSymbol Class, ITypeSymbol TRequest, ITypeSymbol TResponse, IReadOnlyList<ITypeParameterSymbol> TypeParameters)>();
         var notifications = new List<ITypeSymbol>();
 
-        foreach (var classSyntax in classes)
+        foreach (var typeSyntax in types)
         {
             if (cancellationToken.IsCancellationRequested)
                 break;
                 
-            var model = _compilation.GetSemanticModel(classSyntax.SyntaxTree);
-            var classSymbol = model.GetDeclaredSymbol(classSyntax, cancellationToken);
-            if (classSymbol is not {Kind: SymbolKind.NamedType})
+            var model = _compilation.GetSemanticModel(typeSyntax.SyntaxTree);
+            var typeSymbol = model.GetDeclaredSymbol(typeSyntax, cancellationToken);
+            if (typeSymbol is not {Kind: SymbolKind.NamedType})
                 continue;
 
-            var requestInterface = classSymbol.AllInterfaces.FirstOrDefault(i =>
+            var requestInterface = typeSymbol.AllInterfaces.FirstOrDefault(i =>
                 i.OriginalDefinition.Equals(_iRequestSymbol, SymbolEqualityComparer.Default));
-            if (requestInterface != null && classSymbol.TypeArguments.Length == 0)
+            if (requestInterface != null && typeSymbol.TypeArguments.Length == 0)
             {
                 var tResponse = requestInterface.TypeArguments[0];
-                requests.Add((classSymbol, tResponse));
+                requests.Add((typeSymbol, tResponse));
             }
 
-            var handlerInterface = classSymbol.AllInterfaces.FirstOrDefault(i =>
+            var handlerInterface = typeSymbol.AllInterfaces.FirstOrDefault(i =>
                 i.OriginalDefinition.Equals(_iRequestHandlerSymbol, SymbolEqualityComparer.Default));
-            if (handlerInterface != null && classSymbol.TypeArguments.Length == 0 && !classSymbol.IsAbstract)
+            if (handlerInterface != null && typeSymbol.TypeArguments.Length == 0 && !typeSymbol.IsAbstract)
             {
                 var tRequest = handlerInterface.TypeArguments[0];
                 var tResponse = handlerInterface.TypeArguments[1];
-                VerifyRequestMatchesHandler(classSymbol, tRequest);
-                handlers.Add((classSymbol, tRequest, tResponse));
+                VerifyRequestMatchesHandler(typeSymbol, tRequest);
+                handlers.Add((typeSymbol, tRequest, tResponse));
             }
 
-            var behaviorInterface = classSymbol.AllInterfaces.FirstOrDefault(i =>
+            var behaviorInterface = typeSymbol.AllInterfaces.FirstOrDefault(i =>
                 i.OriginalDefinition.Equals(_iPipelineBehaviorSymbol, SymbolEqualityComparer.Default));
-            if (behaviorInterface != null && !classSymbol.IsAbstract)
+            if (behaviorInterface != null && !typeSymbol.IsAbstract)
             {
                 var tRequest = behaviorInterface.TypeArguments[0];
                 var tResponse = behaviorInterface.TypeArguments[1];
-                var typeParameters = classSymbol.TypeParameters; // Capture constraints
-                VerifyAdaptorMatchesTResponse(classSymbol, tResponse);
-                behaviors.Add((classSymbol, tRequest, tResponse, typeParameters));
+                var typeParameters = typeSymbol.TypeParameters; // Capture constraints
+                VerifyAdaptorMatchesTResponse(typeSymbol, tResponse);
+                behaviors.Add((typeSymbol, tRequest, tResponse, typeParameters));
             }
 
-            var notificationInterface = classSymbol.AllInterfaces.FirstOrDefault(i =>
+            var notificationInterface = typeSymbol.AllInterfaces.FirstOrDefault(i =>
                 i.OriginalDefinition.Equals(_iNotificationSymbol, SymbolEqualityComparer.Default));
-            if (notificationInterface != null && classSymbol.TypeArguments.Length == 0)
+            if (notificationInterface != null && typeSymbol.TypeArguments.Length == 0)
             {
-                notifications.Add(classSymbol);
+                notifications.Add(typeSymbol);
             }
         }
 
