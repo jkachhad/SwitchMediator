@@ -5,13 +5,14 @@ namespace Mediator.Switch.SourceGenerator;
 
 public class SyntaxCollector : ISyntaxReceiver
 {
-    public List<ClassDeclarationSyntax> Classes { get; } = [];
+    public List<TypeDeclarationSyntax> Types { get; } = [];
 
     public void OnVisitSyntaxNode(SyntaxNode node)
     {
-        if (node is ClassDeclarationSyntax classDeclaration)
+        // Include only type declarations that are classes or records
+        if (node is TypeDeclarationSyntax typeDeclaration and (ClassDeclarationSyntax or RecordDeclarationSyntax))
         {
-            Classes.Add(classDeclaration);
+            Types.Add(typeDeclaration);
         }
     }
 }
