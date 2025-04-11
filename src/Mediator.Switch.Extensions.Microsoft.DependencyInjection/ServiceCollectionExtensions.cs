@@ -43,7 +43,7 @@ namespace Mediator.Switch.Extensions.Microsoft.DependencyInjection
                 foreach (var handlerInterface in handlerType.GetInterfaces()
                     .Where(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(INotificationHandler<>)))
                 {
-                    services.AddScoped(handlerInterface, handlerType);
+                    services.AddScoped(handlerInterface, sp => sp.GetRequiredService(handlerType));
                 }
             }
 
