@@ -36,7 +36,15 @@ namespace Mediator.Switch.Extensions.Microsoft.DependencyInjection
 
             foreach (var handlerType in notificationHandlerTypes)
             {
+                // Register the concrete type
                 services.AddScoped(handlerType);
+                
+                // Also register against notification handler interfaces
+                foreach (var handlerInterface in handlerType.GetInterfaces()
+                    .Where(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(INotificationHandler<>)))
+                {
+                    services.AddScoped(handlerInterface, handlerType);
+                }
             }
 
             // Register Pipeline Behaviors
