@@ -5,23 +5,22 @@ namespace Mediator.Switch.Extensions.Microsoft.DependencyInjection
 {
     public static class ServiceCollectionExtensions
     {
-        public static IServiceCollection AddMediator<TSwitchMediator>(this IServiceCollection services, params Assembly[] assembliesToScan)
+        public static IServiceCollection AddMediator<TSwitchMediator>(this IServiceCollection services, ServiceLifetime serviceLifetime, params Assembly[] assembliesToScan)
             where TSwitchMediator : class, IMediator
         {
             return AddMediator<TSwitchMediator>(services, op =>
             {
                 op.TargetAssemblies = assembliesToScan;
-                op.ServiceLifetime = ServiceLifetime.Scoped;
+                op.ServiceLifetime = serviceLifetime;
             });
         }
 
         public static IServiceCollection AddMediator<TSwitchMediator>(this IServiceCollection services, Action<SwitchMediatorOptions>? configure)
             where TSwitchMediator : class, IMediator
         {
-            var options = new SwitchMediatorOptions();
-            
-            if (configure != null)
-                configure(options);
+            var options = new SwitchMediatorOptions(services);
+
+            configure?.Invoke(options);
             
             services.Add(new ServiceDescriptor(typeof(IMediator), typeof(TSwitchMediator), options.ServiceLifetime));
             services.Add(new ServiceDescriptor(typeof(ISender), sp => sp.GetRequiredService<IMediator>(), options.ServiceLifetime));
@@ -73,17 +72,6 @@ namespace Mediator.Switch.Extensions.Microsoft.DependencyInjection
                 services.Add(new ServiceDescriptor(behaviorType, behaviorType, options.ServiceLifetime));
             }
 
-            return services;
-        }
-
-        public static IServiceCollection OrderNotificationHandlers<TNotification>(this IServiceCollection services, params Type[] handlerTypes)
-            where TNotification : INotification
-        {
-            services.Add(new ServiceDescriptor(typeof(IEnumerable<INotificationHandler<TNotification>>),
-                sp => handlerTypes.Select(handlerType
-                    => (INotificationHandler<TNotification>)sp.GetRequiredService(handlerType)).ToList(),
-                ServiceLifetime.Scoped));
-          
             return services;
         }
     }
