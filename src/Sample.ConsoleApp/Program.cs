@@ -9,17 +9,19 @@ public static class Program
 {
     public static async Task Main()
     {
-        var services = new ServiceCollection();
-        services.AddValidatorsFromAssembly(typeof(Program).Assembly);
-        services.AddMediator<SwitchMediator>(op =>
+        var services = new ServiceCollection()
+            .AddValidatorsFromAssembly(typeof(Program).Assembly)
+            
+            // Register SwitchMediator
+            .AddMediator<SwitchMediator>(op =>
             {
                 op.TargetAssemblies = [typeof(Program).Assembly];
                 op.ServiceLifetime = ServiceLifetime.Singleton;
-            })
-            .OrderNotificationHandlers<UserLoggedInEvent>(
-                typeof(UserLoggedInLogger),
-                typeof(UserLoggedInAnalytics)
-            );
+                op.OrderNotificationHandlers<UserLoggedInEvent>(
+                    typeof(UserLoggedInLogger),
+                    typeof(UserLoggedInAnalytics)
+                );
+            });
 
         var serviceProvider = services.BuildServiceProvider();
 

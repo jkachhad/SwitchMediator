@@ -5,6 +5,11 @@ namespace Mediator.Switch.Extensions.Microsoft.DependencyInjection;
 
 public class SwitchMediatorOptions
 {
+	private readonly IServiceCollection _services;
+
+	public SwitchMediatorOptions(IServiceCollection services) => 
+		_services = services;
+
 	/// <summary>
 	/// The assemblies scanned for handlers and behaviors.
 	/// </summary>
@@ -14,4 +19,16 @@ public class SwitchMediatorOptions
 	/// The default lifetime for the services registered by the mediator.
 	/// </summary>
 	public ServiceLifetime ServiceLifetime { get; set; } = ServiceLifetime.Scoped;
+	
+	public SwitchMediatorOptions OrderNotificationHandlers<TNotification>(params Type[] handlerTypes)
+		where TNotification : INotification
+	{
+		_services.Add(new ServiceDescriptor(typeof(IEnumerable<INotificationHandler<TNotification>>),
+			sp => handlerTypes
+				.Select(handlerType => (INotificationHandler<TNotification>) sp.GetRequiredService(handlerType))
+				.ToList(),
+			ServiceLifetime));
+
+		return this;
+	}
 }
