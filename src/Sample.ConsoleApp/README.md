@@ -132,18 +132,30 @@ This sample application demonstrates various technical capabilities of the **Swi
     // In Program.Main:
     var services = new ServiceCollection();
     // ... other registrations ...
-    services.AddScoped<SwitchMediator>(typeof(Program).Assembly); // Registers mediator & scans assembly
+    services.AddMediator<SwitchMediator>(op =>
+    {
+        op.TargetAssemblies = [typeof(Program).Assembly];
+        op.ServiceLifetime = ServiceLifetime.Singleton;
+        op.OrderNotificationHandlers<UserLoggedInEvent>(
+            typeof(UserLoggedInLogger),
+            typeof(UserLoggedInAnalytics)
+        );
+    });
+
     ```
 
 *   **Notification Handler Ordering:** Demonstrates explicit control over the execution order for handlers of a specific notification type.
 
     ```csharp
     // In Program.Main (DI setup):
-    services.AddScoped<SwitchMediator>(typeof(Program).Assembly)
-        .OrderNotificationHandlers<UserLoggedInEvent>( // Specify order for UserLoggedInEvent
+    services.AddMediator<SwitchMediator>(op =>
+    {
+        // ... other options ...
+        op.OrderNotificationHandlers<UserLoggedInEvent>( // Specify order for UserLoggedInEvent
             typeof(UserLoggedInLogger), // Runs first
             typeof(UserLoggedInAnalytics) // Runs second
         );
+    });
     ```
 
 *   **Core Abstractions:** Uses the `ISender` and `IPublisher` interfaces to interact with the mediator, obtained via DI.

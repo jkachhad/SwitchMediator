@@ -93,13 +93,17 @@ public static class Program
 
         // --- SwitchMediator Registration ---
         // 1. Register SwitchMediator itself.
-        // 2. Pass assembly(s) containing handlers, messages, behaviors for scanning.
-        services.AddScoped<SwitchMediator>(typeof(Program).Assembly)
+        services.AddMediator<SwitchMediator>(op =>
+        {
+            // 2. Pass assembly(s) containing handlers, messages, behaviors for scanning and specify service lifetime.
+            op.TargetAssemblies = [typeof(Program).Assembly];
+            op.ServiceLifetime = ServiceLifetime.Singleton;
             // 3. Optionally, specify notification handler order.
-            .OrderNotificationHandlers<Sample.UserLoggedInEvent>(
-                typeof(Sample.UserLoggedInLogger),
-                typeof(Sample.UserLoggedInAnalytics)
+            op.OrderNotificationHandlers<UserLoggedInEvent>(
+                typeof(UserLoggedInLogger),
+                typeof(UserLoggedInAnalytics)
             );
+        });
 
         // --- Build and Scope ---
         var serviceProvider = services.BuildServiceProvider();
