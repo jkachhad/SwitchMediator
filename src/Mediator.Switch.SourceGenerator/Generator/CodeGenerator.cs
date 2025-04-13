@@ -22,7 +22,7 @@ public static class CodeGenerator
         });
         
         var notificationHandlerFields = notifications.Select(n =>
-            $"private readonly IEnumerable<INotificationHandler<{n}>> _{n.GetVariableName()}__Handlers;");
+            $"private IEnumerable<INotificationHandler<{n}>> _{n.GetVariableName()}__Handlers;");
 
         // Generate constructor parameters
         var constructorParams = handlers.Select(h => $"{h.Class} {h.Class.GetVariableName()}")
@@ -44,9 +44,7 @@ public static class CodeGenerator
             return applicableBehaviors.Select(b =>
                 $"_{b.Class.GetVariableName()}__{request.Class.GetVariableName()} = {b.Class.GetVariableName()}__{request.Class.GetVariableName()};");
         });
-        constructorInitializers = constructorInitializers.Concat(behaviorInitializers)
-            .Concat(notifications.Select(n =>
-                $"_{n.GetVariableName()}__Handlers = _serviceProvider.GetServices<INotificationHandler<{n}>>();"));
+        constructorInitializers = constructorInitializers.Concat(behaviorInitializers);
 
         // Generate Send method switch cases
         var sendCases = requestBehaviors
@@ -83,6 +81,7 @@ public static class CodeGenerator
                 $$"""
                   case {{n}} {{n.GetVariableName()}}:
                               {
+                                  _{{n.GetVariableName()}}__Handlers ??= _serviceProvider.GetServices<INotificationHandler<{{n}}>>();
                                   foreach (var handler in _{{n.GetVariableName()}}__Handlers)
                                   {
                                       await handler.Handle({{n.GetVariableName()}}, cancellationToken);
