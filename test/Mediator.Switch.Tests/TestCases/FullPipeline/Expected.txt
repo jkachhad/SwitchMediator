@@ -28,7 +28,7 @@ public class SwitchMediator : IMediator
     private readonly Tests.FullPipeline.TransactionBehavior<Tests.FullPipeline.CreateOrderRequest, int> _tests_FullPipeline_TransactionBehavior__tests_FullPipeline_CreateOrderRequest;
     private readonly Tests.FullPipeline.ValidationBehavior<Tests.FullPipeline.CreateOrderRequest, int> _tests_FullPipeline_ValidationBehavior__tests_FullPipeline_CreateOrderRequest;
     private readonly Tests.FullPipeline.LoggingBehavior<Tests.FullPipeline.CreateOrderRequest, int> _tests_FullPipeline_LoggingBehavior__tests_FullPipeline_CreateOrderRequest;
-    private readonly IEnumerable<INotificationHandler<Tests.FullPipeline.UserLoggedInEvent>> _tests_FullPipeline_UserLoggedInEvent__Handlers;
+    private readonly IEnumerable<Lazy<INotificationHandler<Tests.FullPipeline.UserLoggedInEvent>>> _tests_FullPipeline_UserLoggedInEvent__Handlers;
 
     public SwitchMediator(
         Lazy<Tests.FullPipeline.GetUserRequestHandler> tests_FullPipeline_GetUserRequestHandler,
@@ -39,7 +39,7 @@ public class SwitchMediator : IMediator
         Tests.FullPipeline.TransactionBehavior<Tests.FullPipeline.CreateOrderRequest, int> tests_FullPipeline_TransactionBehavior__tests_FullPipeline_CreateOrderRequest,
         Tests.FullPipeline.ValidationBehavior<Tests.FullPipeline.CreateOrderRequest, int> tests_FullPipeline_ValidationBehavior__tests_FullPipeline_CreateOrderRequest,
         Tests.FullPipeline.LoggingBehavior<Tests.FullPipeline.CreateOrderRequest, int> tests_FullPipeline_LoggingBehavior__tests_FullPipeline_CreateOrderRequest,
-        IEnumerable<INotificationHandler<Tests.FullPipeline.UserLoggedInEvent>> tests_FullPipeline_UserLoggedInEvent__Handlers)
+        IEnumerable<Lazy<INotificationHandler<Tests.FullPipeline.UserLoggedInEvent>>> tests_FullPipeline_UserLoggedInEvent__Handlers)
     {
         _tests_FullPipeline_GetUserRequestHandler = tests_FullPipeline_GetUserRequestHandler;
         _tests_FullPipeline_CreateOrderRequestHandler = tests_FullPipeline_CreateOrderRequestHandler;
@@ -75,7 +75,7 @@ public class SwitchMediator : IMediator
             {
                 foreach (var handler in _tests_FullPipeline_UserLoggedInEvent__Handlers)
                 {
-                    await handler.Handle(tests_FullPipeline_UserLoggedInEvent, cancellationToken);
+                    await handler.Value.Handle(tests_FullPipeline_UserLoggedInEvent, cancellationToken);
                 }
                 break;
             }
