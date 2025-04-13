@@ -20,19 +20,19 @@ namespace Mediator.Switch;
 
 public class SwitchMediator : IMediator
 {
-    private readonly Tests.PolymorphicRequests.DogRequestHandler _tests_PolymorphicRequests_DogRequestHandler;
-    private readonly Tests.PolymorphicRequests.CatRequestHandler _tests_PolymorphicRequests_CatRequestHandler;
-    private readonly Tests.PolymorphicRequests.GenericAnimalRequestHandler _tests_PolymorphicRequests_GenericAnimalRequestHandler;
-    private readonly Tests.PolymorphicRequests.CarRequestHandler _tests_PolymorphicRequests_CarRequestHandler;
+    private readonly Lazy<Tests.PolymorphicRequests.DogRequestHandler> _tests_PolymorphicRequests_DogRequestHandler;
+    private readonly Lazy<Tests.PolymorphicRequests.CatRequestHandler> _tests_PolymorphicRequests_CatRequestHandler;
+    private readonly Lazy<Tests.PolymorphicRequests.GenericAnimalRequestHandler> _tests_PolymorphicRequests_GenericAnimalRequestHandler;
+    private readonly Lazy<Tests.PolymorphicRequests.CarRequestHandler> _tests_PolymorphicRequests_CarRequestHandler;
     private readonly IEnumerable<INotificationHandler<Tests.PolymorphicRequests.DomainEvent>> _tests_PolymorphicRequests_DomainEvent__Handlers;
     private readonly IEnumerable<INotificationHandler<Tests.PolymorphicRequests.UserCreatedEvent>> _tests_PolymorphicRequests_UserCreatedEvent__Handlers;
     private readonly IEnumerable<INotificationHandler<Tests.PolymorphicRequests.OrderPlacedEvent>> _tests_PolymorphicRequests_OrderPlacedEvent__Handlers;
 
     public SwitchMediator(
-        Tests.PolymorphicRequests.DogRequestHandler tests_PolymorphicRequests_DogRequestHandler,
-        Tests.PolymorphicRequests.CatRequestHandler tests_PolymorphicRequests_CatRequestHandler,
-        Tests.PolymorphicRequests.GenericAnimalRequestHandler tests_PolymorphicRequests_GenericAnimalRequestHandler,
-        Tests.PolymorphicRequests.CarRequestHandler tests_PolymorphicRequests_CarRequestHandler,
+        Lazy<Tests.PolymorphicRequests.DogRequestHandler> tests_PolymorphicRequests_DogRequestHandler,
+        Lazy<Tests.PolymorphicRequests.CatRequestHandler> tests_PolymorphicRequests_CatRequestHandler,
+        Lazy<Tests.PolymorphicRequests.GenericAnimalRequestHandler> tests_PolymorphicRequests_GenericAnimalRequestHandler,
+        Lazy<Tests.PolymorphicRequests.CarRequestHandler> tests_PolymorphicRequests_CarRequestHandler,
         IEnumerable<INotificationHandler<Tests.PolymorphicRequests.DomainEvent>> tests_PolymorphicRequests_DomainEvent__Handlers,
         IEnumerable<INotificationHandler<Tests.PolymorphicRequests.UserCreatedEvent>> tests_PolymorphicRequests_UserCreatedEvent__Handlers,
         IEnumerable<INotificationHandler<Tests.PolymorphicRequests.OrderPlacedEvent>> tests_PolymorphicRequests_OrderPlacedEvent__Handlers)
@@ -105,7 +105,7 @@ public class SwitchMediator : IMediator
         CancellationToken cancellationToken)
     {
         return
-            /* Request Handler */ _tests_PolymorphicRequests_GenericAnimalRequestHandler.Handle(request, cancellationToken);
+            /* Request Handler */ _tests_PolymorphicRequests_GenericAnimalRequestHandler.Value.Handle(request, cancellationToken);
     }
 
     private Task<string> HandleDogRequestWithBehaviors(
@@ -113,7 +113,7 @@ public class SwitchMediator : IMediator
         CancellationToken cancellationToken)
     {
         return
-            /* Request Handler */ _tests_PolymorphicRequests_DogRequestHandler.Handle(request, cancellationToken);
+            /* Request Handler */ _tests_PolymorphicRequests_DogRequestHandler.Value.Handle(request, cancellationToken);
     }
 
     private Task<string> HandleCatRequestWithBehaviors(
@@ -121,7 +121,7 @@ public class SwitchMediator : IMediator
         CancellationToken cancellationToken)
     {
         return
-            /* Request Handler */ _tests_PolymorphicRequests_CatRequestHandler.Handle(request, cancellationToken);
+            /* Request Handler */ _tests_PolymorphicRequests_CatRequestHandler.Value.Handle(request, cancellationToken);
     }
 
     private Task<double> HandleCarRequestWithBehaviors(
@@ -129,7 +129,7 @@ public class SwitchMediator : IMediator
         CancellationToken cancellationToken)
     {
         return
-            /* Request Handler */ _tests_PolymorphicRequests_CarRequestHandler.Handle(request, cancellationToken);
+            /* Request Handler */ _tests_PolymorphicRequests_CarRequestHandler.Value.Handle(request, cancellationToken);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

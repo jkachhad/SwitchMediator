@@ -20,12 +20,12 @@ namespace Mediator.Switch;
 
 public class SwitchMediator : IMediator
 {
-    private readonly Tests.MultipleRequests.GetProductRequestHandler _tests_MultipleRequests_GetProductRequestHandler;
-    private readonly Tests.MultipleRequests.GetInventoryRequestHandler _tests_MultipleRequests_GetInventoryRequestHandler;
+    private readonly Lazy<Tests.MultipleRequests.GetProductRequestHandler> _tests_MultipleRequests_GetProductRequestHandler;
+    private readonly Lazy<Tests.MultipleRequests.GetInventoryRequestHandler> _tests_MultipleRequests_GetInventoryRequestHandler;
 
     public SwitchMediator(
-        Tests.MultipleRequests.GetProductRequestHandler tests_MultipleRequests_GetProductRequestHandler,
-        Tests.MultipleRequests.GetInventoryRequestHandler tests_MultipleRequests_GetInventoryRequestHandler)
+        Lazy<Tests.MultipleRequests.GetProductRequestHandler> tests_MultipleRequests_GetProductRequestHandler,
+        Lazy<Tests.MultipleRequests.GetInventoryRequestHandler> tests_MultipleRequests_GetInventoryRequestHandler)
     {
         _tests_MultipleRequests_GetProductRequestHandler = tests_MultipleRequests_GetProductRequestHandler;
         _tests_MultipleRequests_GetInventoryRequestHandler = tests_MultipleRequests_GetInventoryRequestHandler;
@@ -61,7 +61,7 @@ public class SwitchMediator : IMediator
         CancellationToken cancellationToken)
     {
         return
-            /* Request Handler */ _tests_MultipleRequests_GetProductRequestHandler.Handle(request, cancellationToken);
+            /* Request Handler */ _tests_MultipleRequests_GetProductRequestHandler.Value.Handle(request, cancellationToken);
     }
 
     private Task<int> HandleGetInventoryRequestWithBehaviors(
@@ -69,7 +69,7 @@ public class SwitchMediator : IMediator
         CancellationToken cancellationToken)
     {
         return
-            /* Request Handler */ _tests_MultipleRequests_GetInventoryRequestHandler.Handle(request, cancellationToken);
+            /* Request Handler */ _tests_MultipleRequests_GetInventoryRequestHandler.Value.Handle(request, cancellationToken);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
