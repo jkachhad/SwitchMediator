@@ -25,7 +25,8 @@ public static class CodeGenerator
             $"private readonly IEnumerable<INotificationHandler<{n}>> _{n.GetVariableName()}__Handlers;");
 
         // Generate constructor parameters
-        var constructorParams = handlers.Select(h => $"{h.Class} {h.Class.GetVariableName()}");
+        var constructorParams = handlers.Select(h => $"{h.Class} {h.Class.GetVariableName()}")
+            .Prepend("IServiceProvider serviceProvider");
         var behaviorParams = requestBehaviors.SelectMany(r =>
         {
             var (request, applicableBehaviors) = r;
@@ -119,7 +120,7 @@ public static class CodeGenerator
                   private readonly IServiceProvider _serviceProvider;
                   {{string.Join("\n    ", handlerFields.Concat(behaviorFields).Concat(notificationHandlerFields))}}
               
-                  public SwitchMediator(IServiceProvider serviceProvider,
+                  public SwitchMediator(
                       {{string.Join(",\n        ", constructorParams)}})
                   {
                       _serviceProvider = serviceProvider;
