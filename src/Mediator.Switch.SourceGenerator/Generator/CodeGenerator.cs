@@ -22,7 +22,7 @@ public static class CodeGenerator
         });
         
         var notificationHandlerFields = notifications.Select(n =>
-            $"private IEnumerable<INotificationHandler<{n}>> _{n.GetVariableName()}__Handlers;");
+            $"private readonly IEnumerable<INotificationHandler<{n}>> _{n.GetVariableName()}__Handlers;");
 
         // Generate constructor parameters
         var constructorParams = handlers.Select(h => $"{h.Class} {h.Class.GetVariableName()}");
