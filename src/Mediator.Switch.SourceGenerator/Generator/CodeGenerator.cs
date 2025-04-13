@@ -22,7 +22,7 @@ public static class CodeGenerator
         });
         
         var notificationHandlerFields = notifications.Select(n =>
-            $"private readonly IEnumerable<INotificationHandler<{n}>> _{n.GetVariableName()}__Handlers;");
+            $"private IEnumerable<INotificationHandler<{n}>> _{n.GetVariableName()}__Handlers;");
 
         // Generate constructor parameters
         var constructorParams = handlers.Select(h => $"{h.Class} {h.Class.GetVariableName()}");
@@ -32,8 +32,7 @@ public static class CodeGenerator
             return applicableBehaviors.Select(b =>
                 $"{b.Class.ToString().DropGenerics()}<{request.Class}, {b.TResponse}> {b.Class.GetVariableName()}__{request.Class.GetVariableName()}");
         });
-        constructorParams = constructorParams.Concat(behaviorParams)
-            .Concat(notifications.Select(n => $"IEnumerable<INotificationHandler<{n}>> {n.GetVariableName()}__Handlers"));
+        constructorParams = constructorParams.Concat(behaviorParams);
 
         // Generate constructor initializers
         var constructorInitializers = handlers.Select(h =>
@@ -46,7 +45,7 @@ public static class CodeGenerator
         });
         constructorInitializers = constructorInitializers.Concat(behaviorInitializers)
             .Concat(notifications.Select(n =>
-                $"_{n.GetVariableName()}__Handlers = {n.GetVariableName()}__Handlers;"));
+                $"_{n.GetVariableName()}__Handlers = _serviceProvider.GetServices<INotificationHandler<{n}>>();"));
 
         // Generate Send method switch cases
         var sendCases = requestBehaviors
@@ -106,6 +105,7 @@ public static class CodeGenerator
               using System;
               using System.Collections.Generic;
               using System.Diagnostics;
+              using Microsoft.Extensions.DependencyInjection;
               using System.Runtime.CompilerServices;
               using System.Threading;
               using System.Threading.Tasks;
@@ -116,11 +116,13 @@ public static class CodeGenerator
 
               public class SwitchMediator : IMediator
               {
+                  private readonly IServiceProvider _serviceProvider;
                   {{string.Join("\n    ", handlerFields.Concat(behaviorFields).Concat(notificationHandlerFields))}}
               
-                  public SwitchMediator(
+                  public SwitchMediator(IServiceProvider serviceProvider,
                       {{string.Join(",\n        ", constructorParams)}})
                   {
+                      _serviceProvider = serviceProvider;
                       {{string.Join("\n        ", constructorInitializers)}}
                   }
               
