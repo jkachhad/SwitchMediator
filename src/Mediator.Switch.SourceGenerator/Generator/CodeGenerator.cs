@@ -22,7 +22,7 @@ public static class CodeGenerator
         });
         
         var notificationHandlerFields = notifications.Select(n =>
-            $"private readonly IEnumerable<INotificationHandler<{n}>> _{n.GetVariableName()}__Handlers;");
+            $"private readonly IEnumerable<Lazy<INotificationHandler<{n}>>> _{n.GetVariableName()}__Handlers;");
 
         // Generate constructor parameters
         var constructorParams = handlers.Select(h => $"Lazy<{h.Class}> {h.Class.GetVariableName()}");
@@ -33,7 +33,7 @@ public static class CodeGenerator
                 $"{b.Class.ToString().DropGenerics()}<{request.Class}, {b.TResponse}> {b.Class.GetVariableName()}__{request.Class.GetVariableName()}");
         });
         constructorParams = constructorParams.Concat(behaviorParams)
-            .Concat(notifications.Select(n => $"IEnumerable<INotificationHandler<{n}>> {n.GetVariableName()}__Handlers"));
+            .Concat(notifications.Select(n => $"IEnumerable<Lazy<INotificationHandler<{n}>>> {n.GetVariableName()}__Handlers"));
 
         // Generate constructor initializers
         var constructorInitializers = handlers.Select(h =>
@@ -85,7 +85,7 @@ public static class CodeGenerator
                               {
                                   foreach (var handler in _{{n.GetVariableName()}}__Handlers)
                                   {
-                                      await handler.Handle({{n.GetVariableName()}}, cancellationToken);
+                                      await handler.Value.Handle({{n.GetVariableName()}}, cancellationToken);
                                   }
                                   break;
                               }

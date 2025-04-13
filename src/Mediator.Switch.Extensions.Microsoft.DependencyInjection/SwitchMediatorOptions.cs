@@ -23,12 +23,12 @@ public class SwitchMediatorOptions
 	public SwitchMediatorOptions OrderNotificationHandlers<TNotification>(params Type[] handlerTypes)
 		where TNotification : INotification
 	{
-		_services.Add(new ServiceDescriptor(typeof(IEnumerable<INotificationHandler<TNotification>>),
+		_services.Add(new ServiceDescriptor(typeof(IEnumerable<Lazy<INotificationHandler<TNotification>>>),
 			sp => handlerTypes
-				.Select(handlerType => (INotificationHandler<TNotification>) sp.GetRequiredService(handlerType))
+				.Select(handlerType => new Lazy<INotificationHandler<TNotification>>(() => (INotificationHandler<TNotification>) sp.GetRequiredService(handlerType)))
 				.ToList(),
 			ServiceLifetime));
-
+		
 		return this;
 	}
 }

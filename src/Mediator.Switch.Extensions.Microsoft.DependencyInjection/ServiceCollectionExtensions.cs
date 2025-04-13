@@ -58,12 +58,13 @@ public static class ServiceCollectionExtensions
             services.Add(new ServiceDescriptor(typeof(Lazy<>).MakeGenericType(handlerType),
                 sp => CreateLazyService(sp, handlerType), options.ServiceLifetime));
 
+            // TODO
             // Also register against notification handler interfaces
-            foreach (var handlerInterface in handlerType.GetInterfaces()
-                         .Where(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(INotificationHandler<>)))
-            {
-                services.Add(new ServiceDescriptor(handlerInterface, sp => sp.GetRequiredService(handlerType), options.ServiceLifetime));
-            }
+            // foreach (var handlerInterface in handlerType.GetInterfaces()
+            //              .Where(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(INotificationHandler<>)))
+            // {
+            //     services.Add(new ServiceDescriptor(handlerInterface, sp => sp.GetRequiredService(handlerType), options.ServiceLifetime));
+            // }
         }
 
         // Register Pipeline Behaviors
@@ -115,7 +116,6 @@ public static class ServiceCollectionExtensions
 
         // 4. Create the Lazy<handlerType> instance using its constructor that takes Func<T>
         // Use Activator.CreateInstance as we don't know the type at compile time.
-        return Activator.CreateInstance(lazyType,
-            funcDelegate)!; // Add '!' to satisfy nullable reference types if enabled
+        return Activator.CreateInstance(lazyType, funcDelegate)!;
     }
 }
