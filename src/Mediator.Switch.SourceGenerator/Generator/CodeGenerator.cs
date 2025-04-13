@@ -11,7 +11,7 @@ public static class CodeGenerator
         List<ITypeSymbol> notifications)
     {
         // Generate fields
-        var handlerFields = handlers.Select(h => $"private readonly {h.Class} _{h.Class.GetVariableName()};");
+        var handlerFields = handlers.Select(h => $"private readonly Lazy<{h.Class}> _{h.Class.GetVariableName()};");
 
         // Generate behavior fields specific to each request, respecting constraints
         var behaviorFields = requestBehaviors.SelectMany(r =>
@@ -25,7 +25,7 @@ public static class CodeGenerator
             $"private readonly IEnumerable<INotificationHandler<{n}>> _{n.GetVariableName()}__Handlers;");
 
         // Generate constructor parameters
-        var constructorParams = handlers.Select(h => $"{h.Class} {h.Class.GetVariableName()}");
+        var constructorParams = handlers.Select(h => $"Lazy<{h.Class}> {h.Class.GetVariableName()}");
         var behaviorParams = requestBehaviors.SelectMany(r =>
         {
             var (request, applicableBehaviors) = r;
@@ -64,7 +64,7 @@ public static class CodeGenerator
             var (request, applicableBehaviors) = r;
             var handler = handlers.FirstOrDefault(h => h.TRequest.Equals(request.Class, SymbolEqualityComparer.Default));
             if (handler == default) return null;
-            var chain = BehaviorChainBuilder.Build(applicableBehaviors, request.Class.GetVariableName(), $"_{handler.Class.GetVariableName()}.Handle");
+            var chain = BehaviorChainBuilder.Build(applicableBehaviors, request.Class.GetVariableName(), $"_{handler.Class.GetVariableName()}.Value.Handle");
             return $$"""
                      private Task<{{request.TResponse}}> Handle{{request.Class.Name}}WithBehaviors(
                              {{request.Class}} request,
