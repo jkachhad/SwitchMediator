@@ -53,13 +53,21 @@ public class User : IVersionedResponse
 // Request Handlers
 public class GetUserRequestHandler : IRequestHandler<GetUserRequest, Result<User>>
 {
-    public async Task<Result<User>> Handle(GetUserRequest request, CancellationToken cancellationToken = default) =>
-        new User
+    private readonly IPublisher _publisher;
+
+    public GetUserRequestHandler(IPublisher publisher) => 
+        _publisher = publisher;
+
+    public async Task<Result<User>> Handle(GetUserRequest request, CancellationToken cancellationToken = default)
+    {
+        await _publisher.Publish(new UserLoggedInEvent(request.UserId), cancellationToken);
+        return new User
         {
             UserId = request.UserId,
             Description = $"User {request.UserId} at {request.Timestamp}",
             Version = 50
         };
+    }
 }
 
 public class CreateOrderRequestHandler : IRequestHandler<CreateOrderRequest, int>

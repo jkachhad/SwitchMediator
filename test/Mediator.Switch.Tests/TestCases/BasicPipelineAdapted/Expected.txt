@@ -20,13 +20,13 @@ namespace Mediator.Switch;
 
 public class SwitchMediator : IMediator
 {
-    private readonly Tests.BasicPipelineAdapted.PingHandler _tests_BasicPipelineAdapted_PingHandler;
-    private readonly Tests.BasicPipelineAdapted.PongHandler _tests_BasicPipelineAdapted_PongHandler;
+    private readonly Lazy<Tests.BasicPipelineAdapted.PingHandler> _tests_BasicPipelineAdapted_PingHandler;
+    private readonly Lazy<Tests.BasicPipelineAdapted.PongHandler> _tests_BasicPipelineAdapted_PongHandler;
     private readonly Tests.BasicPipelineAdapted.GenericBehavior<Tests.BasicPipelineAdapted.Ping, Tests.BasicPipelineAdapted.VersionedResponse> _tests_BasicPipelineAdapted_GenericBehavior__tests_BasicPipelineAdapted_Ping;
 
     public SwitchMediator(
-        Tests.BasicPipelineAdapted.PingHandler tests_BasicPipelineAdapted_PingHandler,
-        Tests.BasicPipelineAdapted.PongHandler tests_BasicPipelineAdapted_PongHandler,
+        Lazy<Tests.BasicPipelineAdapted.PingHandler> tests_BasicPipelineAdapted_PingHandler,
+        Lazy<Tests.BasicPipelineAdapted.PongHandler> tests_BasicPipelineAdapted_PongHandler,
         Tests.BasicPipelineAdapted.GenericBehavior<Tests.BasicPipelineAdapted.Ping, Tests.BasicPipelineAdapted.VersionedResponse> tests_BasicPipelineAdapted_GenericBehavior__tests_BasicPipelineAdapted_Ping)
     {
         _tests_BasicPipelineAdapted_PingHandler = tests_BasicPipelineAdapted_PingHandler;
@@ -65,7 +65,7 @@ public class SwitchMediator : IMediator
     {
         return
             _tests_BasicPipelineAdapted_GenericBehavior__tests_BasicPipelineAdapted_Ping.Handle(request, () =>
-            /* Request Handler */ _tests_BasicPipelineAdapted_PingHandler.Handle(request, cancellationToken),
+            /* Request Handler */ _tests_BasicPipelineAdapted_PingHandler.Value.Handle(request, cancellationToken),
             cancellationToken);
     }
 
@@ -74,7 +74,7 @@ public class SwitchMediator : IMediator
         CancellationToken cancellationToken)
     {
         return
-            /* Request Handler */ _tests_BasicPipelineAdapted_PongHandler.Handle(request, cancellationToken);
+            /* Request Handler */ _tests_BasicPipelineAdapted_PongHandler.Value.Handle(request, cancellationToken);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

@@ -20,15 +20,24 @@ public class SwitchMediatorOptions
 	/// </summary>
 	public ServiceLifetime ServiceLifetime { get; set; } = ServiceLifetime.Scoped;
 	
+	/// <summary>
+	/// Specify explicit notification handler ordering.
+	/// </summary>
+	/// <param name="handlerTypes">Handler types in the preferred order.</param>
+	/// <typeparam name="TNotification"></typeparam>
+	/// <returns></returns>
 	public SwitchMediatorOptions OrderNotificationHandlers<TNotification>(params Type[] handlerTypes)
 		where TNotification : INotification
 	{
-		_services.Add(new ServiceDescriptor(typeof(IEnumerable<INotificationHandler<TNotification>>),
-			sp => handlerTypes
-				.Select(handlerType => (INotificationHandler<TNotification>) sp.GetRequiredService(handlerType))
-				.ToList(),
-			ServiceLifetime));
+		foreach (var handlerType in handlerTypes)
+		{
+			if (!typeof(INotificationHandler<TNotification>).IsAssignableFrom(handlerType))
+			{
+				throw new ArgumentException($"Type {handlerType.Name} does not implement INotificationHandler<{typeof(TNotification).Name}>");
+			}
+		}
 
+		_services.OrderNotificationHandlers<TNotification>(handlerTypes, ServiceLifetime);
 		return this;
 	}
 }

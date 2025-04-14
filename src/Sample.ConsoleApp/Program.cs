@@ -26,7 +26,7 @@ public static class Program
         var serviceProvider = services.BuildServiceProvider();
 
         using var scope = serviceProvider.CreateScope();
-        
+
         var sender = scope.ServiceProvider.GetRequiredService<ISender>();
         var publisher = scope.ServiceProvider.GetRequiredService<IPublisher>();
 

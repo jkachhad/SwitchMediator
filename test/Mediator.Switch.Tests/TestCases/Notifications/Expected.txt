@@ -20,12 +20,12 @@ namespace Mediator.Switch;
 
 public class SwitchMediator : IMediator
 {
-    private readonly Tests.Notifications.SimpleRequestHandler _tests_Notifications_SimpleRequestHandler;
-    private readonly IEnumerable<INotificationHandler<Tests.Notifications.OrderCreatedEvent>> _tests_Notifications_OrderCreatedEvent__Handlers;
+    private readonly Lazy<Tests.Notifications.SimpleRequestHandler> _tests_Notifications_SimpleRequestHandler;
+    private readonly IEnumerable<Lazy<INotificationHandler<Tests.Notifications.OrderCreatedEvent>>> _tests_Notifications_OrderCreatedEvent__Handlers;
 
     public SwitchMediator(
-        Tests.Notifications.SimpleRequestHandler tests_Notifications_SimpleRequestHandler,
-        IEnumerable<INotificationHandler<Tests.Notifications.OrderCreatedEvent>> tests_Notifications_OrderCreatedEvent__Handlers)
+        Lazy<Tests.Notifications.SimpleRequestHandler> tests_Notifications_SimpleRequestHandler,
+        IEnumerable<Lazy<INotificationHandler<Tests.Notifications.OrderCreatedEvent>>> tests_Notifications_OrderCreatedEvent__Handlers)
     {
         _tests_Notifications_SimpleRequestHandler = tests_Notifications_SimpleRequestHandler;
         _tests_Notifications_OrderCreatedEvent__Handlers = tests_Notifications_OrderCreatedEvent__Handlers;
@@ -51,7 +51,7 @@ public class SwitchMediator : IMediator
             {
                 foreach (var handler in _tests_Notifications_OrderCreatedEvent__Handlers)
                 {
-                    await handler.Handle(tests_Notifications_OrderCreatedEvent, cancellationToken);
+                    await handler.Value.Handle(tests_Notifications_OrderCreatedEvent, cancellationToken);
                 }
                 break;
             }
@@ -65,7 +65,7 @@ public class SwitchMediator : IMediator
         CancellationToken cancellationToken)
     {
         return
-            /* Request Handler */ _tests_Notifications_SimpleRequestHandler.Handle(request, cancellationToken);
+            /* Request Handler */ _tests_Notifications_SimpleRequestHandler.Value.Handle(request, cancellationToken);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
