@@ -63,13 +63,13 @@ public class SemanticAnalyzer
     public (
         List<(ITypeSymbol Class, ITypeSymbol TRequest, ITypeSymbol TResponse, bool hasMediatorRefInCtor)> Handlers,
         List<((ITypeSymbol Class, ITypeSymbol TResponse) Request, List<(ITypeSymbol Class, ITypeSymbol TRequest, ITypeSymbol TResponse, IReadOnlyList<ITypeParameterSymbol> TypeParameters)> Behaviors)> RequestBehaviors,
-        List<ITypeSymbol> Notifications)
+        List<(ITypeSymbol Class, bool hasMediatorRefInCtor)> Notifications)
         Analyze(List<TypeDeclarationSyntax> types, CancellationToken cancellationToken)
     {
         var requests = new List<(ITypeSymbol Class, ITypeSymbol TResponse)>();
         var handlers = new List<(ITypeSymbol Class, ITypeSymbol TRequest, ITypeSymbol TResponse, bool hasMediatorRefInCtor)>();
         var behaviors = new List<(ITypeSymbol Class, ITypeSymbol TRequest, ITypeSymbol TResponse, IReadOnlyList<ITypeParameterSymbol> TypeParameters)>();
-        var notifications = new List<ITypeSymbol>();
+        var notifications = new List<(ITypeSymbol Class, bool hasMediatorRefInCtor)>();
 
         foreach (var typeSyntax in types)
         {
@@ -96,7 +96,7 @@ public class SemanticAnalyzer
                 var tRequest = handlerInterface.TypeArguments[0];
                 var tResponse = handlerInterface.TypeArguments[1];
                 VerifyRequestMatchesHandler(typeSymbol, tRequest);
-                handlers.Add((typeSymbol, tRequest, tResponse, ConstructorHasMediatorDependencies(typeSymbol)));
+                handlers.Add((typeSymbol, tRequest, tResponse, ConstructorHasMediatorDependencies(typeSymbol, out _)));
             }
 
             var behaviorInterface = typeSymbol.AllInterfaces.FirstOrDefault(i =>
@@ -107,6 +107,7 @@ public class SemanticAnalyzer
                 var tResponse = behaviorInterface.TypeArguments[1];
                 var typeParameters = typeSymbol.TypeParameters; // Capture constraints
                 VerifyAdaptorMatchesTResponse(typeSymbol, tResponse);
+                VerifyConstructorDoesNotHaveMediatorDependencies(typeSymbol);
                 behaviors.Add((typeSymbol, tRequest, tResponse, typeParameters));
             }
 
@@ -114,7 +115,7 @@ public class SemanticAnalyzer
                 i.OriginalDefinition.Equals(_iNotificationSymbol, SymbolEqualityComparer.Default));
             if (notificationInterface != null && typeSymbol.TypeArguments.Length == 0)
             {
-                notifications.Add(typeSymbol);
+                notifications.Add((typeSymbol, true)); // todo
             }
         }
 
@@ -176,6 +177,18 @@ public class SemanticAnalyzer
         }
     }
 
+    private void VerifyConstructorDoesNotHaveMediatorDependencies(INamedTypeSymbol classSymbol)
+    {
+        if (!ConstructorHasMediatorDependencies(classSymbol, out var constructor))
+        {
+            return;
+        }
+
+        var syntaxReference = constructor!.DeclaringSyntaxReferences[0];
+        throw new SourceGenerationException("PipelineBehavior's constructors are not allowed to take dependencies on IMediator, ISender or IPublisher.",
+                Location.Create(syntaxReference.SyntaxTree, syntaxReference.Span));
+    }
+
     private ITypeSymbol? TryUnwrapRequestTResponse(
         (ITypeSymbol Class, ITypeSymbol TRequest, ITypeSymbol TResponse, IReadOnlyList<ITypeParameterSymbol> TypeParameters) b,
         (ITypeSymbol Class, ITypeSymbol TResponse) request)
@@ -210,7 +223,7 @@ public class SemanticAnalyzer
         return typeArgSymbol;
     }
     
-    private bool ConstructorHasMediatorDependencies(INamedTypeSymbol typeSymbol)
+    private bool ConstructorHasMediatorDependencies(INamedTypeSymbol typeSymbol, out IMethodSymbol? ctor)
     {
         foreach (var constructor in typeSymbol.Constructors)
         {
@@ -224,16 +237,17 @@ public class SemanticAnalyzer
             {
                 var paramType = parameter.Type;
 
-                // Check against resolved symbols using the correct comparer
                 if (SymbolEqualityComparer.Default.Equals(paramType.OriginalDefinition, _iMediatorSymbol) ||
                     SymbolEqualityComparer.Default.Equals(paramType.OriginalDefinition, _iSenderSymbol) ||
                     SymbolEqualityComparer.Default.Equals(paramType.OriginalDefinition, _iPublisherSymbol))
                 {
-                    return true; // Found a dependency
+                    ctor = constructor;
+                    return true;
                 }
             }
         }
 
-        return false; // No dependency found in any constructor
+        ctor = null;
+        return false;
     }
 }

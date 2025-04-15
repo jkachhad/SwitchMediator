@@ -30,9 +30,9 @@ public class GetUserRequest(int userId) : IRequest<Result<User>>, IAuditableRequ
 }
 
 [RequestHandler(typeof(CreateOrderRequestHandler))]
-public class CreateOrderRequest(string product) : IRequest<int>, ITransactionalRequest
+public record CreateOrderRequest(string Product) : IRequest<int>, ITransactionalRequest
 {
-    public string Product { get; } = product;
+    public string Product { get; } = Product;
     public Guid TransactionId { get; } = Guid.NewGuid();
 }
 
