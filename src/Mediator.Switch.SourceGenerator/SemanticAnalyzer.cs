@@ -9,15 +9,14 @@ namespace Mediator.Switch.SourceGenerator;
 public class SemanticAnalyzer
 {
     private readonly Compilation _compilation;
-    
-    private readonly INamedTypeSymbol _iMediatorSymbol; 
+    private readonly INamedTypeSymbol _iMediatorSymbol;
     private readonly INamedTypeSymbol _iSenderSymbol;
-    private readonly INamedTypeSymbol _iPublisherSymbol; 
-        
+    private readonly INamedTypeSymbol _iPublisherSymbol;
     private readonly INamedTypeSymbol _iRequestSymbol;
     private readonly INamedTypeSymbol _iRequestHandlerSymbol;
     private readonly INamedTypeSymbol _iPipelineBehaviorSymbol;
     private readonly INamedTypeSymbol _iNotificationSymbol;
+    private readonly INamedTypeSymbol _iNotificationHandlerSymbol;
     private readonly INamedTypeSymbol _responseAdaptorAttributeSymbol;
     private readonly INamedTypeSymbol _orderAttributeSymbol;
     private readonly INamedTypeSymbol _requestHandlerAttributeSymbol;
@@ -25,168 +24,247 @@ public class SemanticAnalyzer
     public SemanticAnalyzer(Compilation compilation)
     {
         _compilation = compilation;
-        
-        var iMediatorSymbol = compilation.GetTypeByMetadataName("Mediator.Switch.IMediator");
-        var iSenderSymbol = compilation.GetTypeByMetadataName("Mediator.Switch.ISender");
-        var iPublisherSymbol = compilation.GetTypeByMetadataName("Mediator.Switch.IPublisher");
-        
-        var iRequestSymbol = compilation.GetTypeByMetadataName("Mediator.Switch.IRequest`1"); 
-        var iRequestHandlerSymbol = compilation.GetTypeByMetadataName("Mediator.Switch.IRequestHandler`2");
-        var iPipelineBehaviorSymbol = compilation.GetTypeByMetadataName("Mediator.Switch.IPipelineBehavior`2");
-        var iNotificationSymbol = compilation.GetTypeByMetadataName("Mediator.Switch.INotification");
-        var iNotificationHandlerSymbol = compilation.GetTypeByMetadataName("Mediator.Switch.INotificationHandler`1"); 
-        
-        var orderAttributeSymbol = compilation.GetTypeByMetadataName("Mediator.Switch.PipelineBehaviorOrderAttribute");
-        var responseAdaptorAttributeSymbol = compilation.GetTypeByMetadataName("Mediator.Switch.PipelineBehaviorResponseAdaptorAttribute");
-        var requestHandlerAttributeSymbol = compilation.GetTypeByMetadataName("Mediator.Switch.RequestHandlerAttribute");
 
-        if (iMediatorSymbol == null || iSenderSymbol == null || iPublisherSymbol == null ||
-            iRequestSymbol == null || iRequestHandlerSymbol == null || iPipelineBehaviorSymbol == null ||
-            iNotificationSymbol == null || iNotificationHandlerSymbol == null || orderAttributeSymbol == null ||
-            responseAdaptorAttributeSymbol == null || requestHandlerAttributeSymbol == null)
-        {
-            throw new InvalidOperationException("Could not find required Mediator.Switch types.");
-        }
-        
-        _iMediatorSymbol = iMediatorSymbol;
-        _iSenderSymbol = iSenderSymbol;
-        _iPublisherSymbol = iPublisherSymbol;
-        _iRequestSymbol = iRequestSymbol;
-        _iRequestHandlerSymbol = iRequestHandlerSymbol;
-        _iPipelineBehaviorSymbol = iPipelineBehaviorSymbol;
-        _iNotificationSymbol = iNotificationSymbol;
-        _orderAttributeSymbol = orderAttributeSymbol;
-        _responseAdaptorAttributeSymbol = responseAdaptorAttributeSymbol;
-        _requestHandlerAttributeSymbol = requestHandlerAttributeSymbol;
+        _iMediatorSymbol = compilation.GetTypeByMetadataName("Mediator.Switch.IMediator") ?? throw new InvalidOperationException("Could not find Mediator.Switch.IMediator");
+        _iSenderSymbol = compilation.GetTypeByMetadataName("Mediator.Switch.ISender") ?? throw new InvalidOperationException("Could not find Mediator.Switch.ISender");
+        _iPublisherSymbol = compilation.GetTypeByMetadataName("Mediator.Switch.IPublisher") ?? throw new InvalidOperationException("Could not find Mediator.Switch.IPublisher");
+        _iRequestSymbol = compilation.GetTypeByMetadataName("Mediator.Switch.IRequest`1") ?? throw new InvalidOperationException("Could not find Mediator.Switch.IRequest`1");
+        _iRequestHandlerSymbol = compilation.GetTypeByMetadataName("Mediator.Switch.IRequestHandler`2") ?? throw new InvalidOperationException("Could not find Mediator.Switch.IRequestHandler`2");
+        _iPipelineBehaviorSymbol = compilation.GetTypeByMetadataName("Mediator.Switch.IPipelineBehavior`2") ?? throw new InvalidOperationException("Could not find Mediator.Switch.IPipelineBehavior`2");
+        _iNotificationSymbol = compilation.GetTypeByMetadataName("Mediator.Switch.INotification") ?? throw new InvalidOperationException("Could not find Mediator.Switch.INotification");
+        _iNotificationHandlerSymbol = compilation.GetTypeByMetadataName("Mediator.Switch.INotificationHandler`1") ?? throw new InvalidOperationException("Could not find Mediator.Switch.INotificationHandler`1");
+        _orderAttributeSymbol = compilation.GetTypeByMetadataName("Mediator.Switch.PipelineBehaviorOrderAttribute") ?? throw new InvalidOperationException("Could not find Mediator.Switch.PipelineBehaviorOrderAttribute");
+        _responseAdaptorAttributeSymbol = compilation.GetTypeByMetadataName("Mediator.Switch.PipelineBehaviorResponseAdaptorAttribute") ?? throw new InvalidOperationException("Could not find Mediator.Switch.PipelineBehaviorResponseAdaptorAttribute");
+        _requestHandlerAttributeSymbol = compilation.GetTypeByMetadataName("Mediator.Switch.RequestHandlerAttribute") ?? throw new InvalidOperationException("Could not find Mediator.Switch.RequestHandlerAttribute");
     }
 
     public (
         List<(ITypeSymbol Class, ITypeSymbol TRequest, ITypeSymbol TResponse, bool hasMediatorRefInCtor)> Handlers,
         List<((ITypeSymbol Class, ITypeSymbol TResponse) Request, List<(ITypeSymbol Class, ITypeSymbol TRequest, ITypeSymbol TResponse, IReadOnlyList<ITypeParameterSymbol> TypeParameters)> Behaviors)> RequestBehaviors,
-        List<(ITypeSymbol Class, bool hasMediatorRefInCtor)> Notifications)
-        Analyze(List<TypeDeclarationSyntax> types, CancellationToken cancellationToken)
+        List<(ITypeSymbol NotificationClass, bool HasHandlerWithMediatorDependency)> Notifications
+    ) Analyze(List<TypeDeclarationSyntax> types, CancellationToken cancellationToken)
     {
         var requests = new List<(ITypeSymbol Class, ITypeSymbol TResponse)>();
         var handlers = new List<(ITypeSymbol Class, ITypeSymbol TRequest, ITypeSymbol TResponse, bool hasMediatorRefInCtor)>();
         var behaviors = new List<(ITypeSymbol Class, ITypeSymbol TRequest, ITypeSymbol TResponse, IReadOnlyList<ITypeParameterSymbol> TypeParameters)>();
-        var notifications = new List<(ITypeSymbol Class, bool hasMediatorRefInCtor)>();
+        var foundNotificationTypes = new List<ITypeSymbol>();
+        var notificationHandlerInfos = new List<(ITypeSymbol HandlerClass, ITypeSymbol NotificationHandledType)>();
 
         foreach (var typeSyntax in types)
         {
-            if (cancellationToken.IsCancellationRequested)
-                break;
-                
-            var model = _compilation.GetSemanticModel(typeSyntax.SyntaxTree);
-            var typeSymbol = model.GetDeclaredSymbol(typeSyntax, cancellationToken);
-            if (typeSymbol is not {Kind: SymbolKind.NamedType})
-                continue;
-
-            var requestInterface = typeSymbol.AllInterfaces.FirstOrDefault(i =>
-                i.OriginalDefinition.Equals(_iRequestSymbol, SymbolEqualityComparer.Default));
-            if (requestInterface != null && typeSymbol.TypeArguments.Length == 0)
-            {
-                var tResponse = requestInterface.TypeArguments[0];
-                requests.Add((typeSymbol, tResponse));
-            }
-
-            var handlerInterface = typeSymbol.AllInterfaces.FirstOrDefault(i =>
-                i.OriginalDefinition.Equals(_iRequestHandlerSymbol, SymbolEqualityComparer.Default));
-            if (handlerInterface != null && typeSymbol.TypeArguments.Length == 0 && !typeSymbol.IsAbstract)
-            {
-                var tRequest = handlerInterface.TypeArguments[0];
-                var tResponse = handlerInterface.TypeArguments[1];
-                VerifyRequestMatchesHandler(typeSymbol, tRequest);
-                handlers.Add((typeSymbol, tRequest, tResponse, ConstructorHasMediatorDependencies(typeSymbol, out _)));
-            }
-
-            var behaviorInterface = typeSymbol.AllInterfaces.FirstOrDefault(i =>
-                i.OriginalDefinition.Equals(_iPipelineBehaviorSymbol, SymbolEqualityComparer.Default));
-            if (behaviorInterface != null && !typeSymbol.IsAbstract)
-            {
-                var tRequest = behaviorInterface.TypeArguments[0];
-                var tResponse = behaviorInterface.TypeArguments[1];
-                var typeParameters = typeSymbol.TypeParameters; // Capture constraints
-                VerifyAdaptorMatchesTResponse(typeSymbol, tResponse);
-                VerifyConstructorDoesNotHaveMediatorDependencies(typeSymbol);
-                behaviors.Add((typeSymbol, tRequest, tResponse, typeParameters));
-            }
-
-            var notificationInterface = typeSymbol.AllInterfaces.FirstOrDefault(i =>
-                i.OriginalDefinition.Equals(_iNotificationSymbol, SymbolEqualityComparer.Default));
-            if (notificationInterface != null && typeSymbol.TypeArguments.Length == 0)
-            {
-                notifications.Add((typeSymbol, true)); // todo
-            }
+            if (cancellationToken.IsCancellationRequested) break;
+            AnalyzeTypeSyntax(typeSyntax, cancellationToken, requests, handlers, behaviors, foundNotificationTypes, notificationHandlerInfos);
         }
 
-        var requestBehaviors = requests.Select(request =>
-                (Request: request, Behaviors: behaviors
-                    .Select(b =>
-                    {
-                        var actualTResponse = TryUnwrapRequestTResponse(b, request);
-                        return actualTResponse != null
-                            ? b with {TResponse = actualTResponse}
-                            : default;
-                    })
-                    .Where(b => b != default && 
-                                BehaviorApplicabilityChecker.IsApplicable(_compilation, b.TypeParameters, request.Class, b.TResponse))
-                    .OrderBy(_orderAttributeSymbol)
-                    .ToList()))
-            .ToList();
+        cancellationToken.ThrowIfCancellationRequested();
 
-        return (handlers, requestBehaviors, notifications);
+        var requestBehaviors = ProcessRequestBehaviors(requests, behaviors);
+        var finalNotifications = DetermineNotificationHandlerDependencies(foundNotificationTypes, notificationHandlerInfos, cancellationToken);
+
+        return (handlers, requestBehaviors, finalNotifications);
     }
 
+    private void AnalyzeTypeSyntax(
+        TypeDeclarationSyntax typeSyntax,
+        CancellationToken cancellationToken,
+        List<(ITypeSymbol Class, ITypeSymbol TResponse)> requests,
+        List<(ITypeSymbol Class, ITypeSymbol TRequest, ITypeSymbol TResponse, bool hasMediatorRefInCtor)> handlers,
+        List<(ITypeSymbol Class, ITypeSymbol TRequest, ITypeSymbol TResponse, IReadOnlyList<ITypeParameterSymbol> TypeParameters)> behaviors,
+        List<ITypeSymbol> foundNotificationTypes,
+        List<(ITypeSymbol HandlerClass, ITypeSymbol NotificationHandledType)> notificationHandlerInfos)
+    {
+        var model = _compilation.GetSemanticModel(typeSyntax.SyntaxTree);
+        if (model.GetDeclaredSymbol(typeSyntax, cancellationToken) is not { } typeSymbol || typeSymbol.IsAbstract)
+        {
+            // Skip non-named types or abstract classes early
+            return;
+        }
+
+        // Check for different Mediator-related interface implementations
+        TryAddRequest(typeSymbol, requests);
+        TryAddRequestHandler(typeSymbol, handlers);
+        TryAddPipelineBehavior(typeSymbol, behaviors);
+        TryAddNotification(typeSymbol, foundNotificationTypes);
+        TryAddNotificationHandlerInfo(typeSymbol, notificationHandlerInfos);
+    }
+
+    private void TryAddRequest(INamedTypeSymbol typeSymbol, List<(ITypeSymbol Class, ITypeSymbol TResponse)> requests)
+    {
+        var requestInterface = typeSymbol.AllInterfaces.FirstOrDefault(i =>
+            SymbolEqualityComparer.Default.Equals(i.OriginalDefinition, _iRequestSymbol));
+
+        // Ensure it's a concrete implementation of IRequest<T>
+        if (requestInterface != null && typeSymbol.TypeArguments.Length == 0)
+        {
+            var tResponse = requestInterface.TypeArguments[0];
+            requests.Add((typeSymbol, tResponse));
+        }
+    }
+
+    private void TryAddRequestHandler(INamedTypeSymbol typeSymbol, List<(ITypeSymbol Class, ITypeSymbol TRequest, ITypeSymbol TResponse, bool hasMediatorRefInCtor)> handlers)
+    {
+        var handlerInterface = typeSymbol.AllInterfaces.FirstOrDefault(i =>
+            SymbolEqualityComparer.Default.Equals(i.OriginalDefinition, _iRequestHandlerSymbol));
+
+        // Ensure it's a concrete implementation of IRequestHandler<TRequest, TResponse>
+        if (handlerInterface != null && typeSymbol.TypeArguments.Length == 0)
+        {
+            var tRequest = handlerInterface.TypeArguments[0];
+            var tResponse = handlerInterface.TypeArguments[1];
+            VerifyRequestMatchesHandler(typeSymbol, tRequest); // Verify attribute if present
+            var hasDependency = ConstructorHasMediatorDependencies(typeSymbol, out _);
+            handlers.Add((typeSymbol, tRequest, tResponse, hasDependency));
+        }
+    }
+
+    private void TryAddPipelineBehavior(INamedTypeSymbol typeSymbol, List<(ITypeSymbol Class, ITypeSymbol TRequest, ITypeSymbol TResponse, IReadOnlyList<ITypeParameterSymbol> TypeParameters)> behaviors)
+    {
+        var behaviorInterface = typeSymbol.AllInterfaces.FirstOrDefault(i =>
+            SymbolEqualityComparer.Default.Equals(i.OriginalDefinition, _iPipelineBehaviorSymbol));
+
+        // Ensure it's a concrete implementation of IPipelineBehavior<TRequest, TResponse>
+        if (behaviorInterface != null) // Abstract check is done in AnalyzeTypeSyntax
+        {
+            var tRequest = behaviorInterface.TypeArguments[0];
+            var tResponse = behaviorInterface.TypeArguments[1];
+            var typeParameters = typeSymbol.TypeParameters;
+            VerifyAdaptorMatchesTResponse(typeSymbol, tResponse); // Verify attribute if present
+            VerifyConstructorDoesNotHaveMediatorDependencies(typeSymbol); // Verify no forbidden dependencies
+            behaviors.Add((typeSymbol, tRequest, tResponse, typeParameters));
+        }
+    }
+
+    private void TryAddNotification(INamedTypeSymbol typeSymbol, List<ITypeSymbol> foundNotificationTypes)
+    {
+        var notificationInterface = typeSymbol.AllInterfaces.FirstOrDefault(i =>
+            SymbolEqualityComparer.Default.Equals(i.OriginalDefinition, _iNotificationSymbol));
+
+        // Ensure it's a concrete implementation of INotification
+        if (notificationInterface != null && typeSymbol.TypeArguments.Length == 0)
+        {
+            // Avoid adding duplicates if a type appears multiple times (e.g., partial classes)
+            if (!foundNotificationTypes.Contains(typeSymbol, SymbolEqualityComparer.Default))
+            {
+                foundNotificationTypes.Add(typeSymbol);
+            }
+        }
+    }
+
+    private void TryAddNotificationHandlerInfo(INamedTypeSymbol typeSymbol, List<(ITypeSymbol HandlerClass, ITypeSymbol NotificationHandledType)> notificationHandlerInfos)
+    {
+        var notificationHandlerInterface = typeSymbol.AllInterfaces.FirstOrDefault(i =>
+            SymbolEqualityComparer.Default.Equals(i.OriginalDefinition, _iNotificationHandlerSymbol));
+
+        // Ensure it's a concrete implementation of INotificationHandler<TNotification>
+        if (notificationHandlerInterface != null && typeSymbol.TypeArguments.Length == 0)
+        {
+            var notificationHandledType = notificationHandlerInterface.TypeArguments.FirstOrDefault();
+            if (notificationHandledType != null)
+            {
+                notificationHandlerInfos.Add((HandlerClass: typeSymbol, NotificationHandledType: notificationHandledType));
+            }
+        }
+    }
+
+    private List<((ITypeSymbol Class, ITypeSymbol TResponse) Request, List<(ITypeSymbol Class, ITypeSymbol TRequest, ITypeSymbol TResponse, IReadOnlyList<ITypeParameterSymbol> TypeParameters)> Behaviors)>
+        ProcessRequestBehaviors(
+            List<(ITypeSymbol Class, ITypeSymbol TResponse)> requests,
+            List<(ITypeSymbol Class, ITypeSymbol TRequest, ITypeSymbol TResponse, IReadOnlyList<ITypeParameterSymbol> TypeParameters)> behaviors)
+    {
+        return requests.Select(request =>
+            (Request: request, Behaviors: behaviors
+                .Select(b =>
+                {
+                    var actualTResponse = TryUnwrapRequestTResponse(b, request);
+                    // Use 'default' for value tuple if unwrapping fails
+                    return actualTResponse != null ? b with { TResponse = actualTResponse } : default;
+                })
+                // Filter out non-applicable behaviors (where unwrapping failed or constraints don't match)
+                .Where(b => b != default && BehaviorApplicabilityChecker.IsApplicable(_compilation, b.TypeParameters, request.Class, b.TResponse))
+                .OrderByDescending(b => GetOrder(b.Class)) // Order by attribute
+                .ToList()))
+            .ToList();
+    }
+
+    private List<(ITypeSymbol NotificationClass, bool HasHandlerWithMediatorDependency)>
+        DetermineNotificationHandlerDependencies(
+            List<ITypeSymbol> foundNotificationTypes,
+            List<(ITypeSymbol HandlerClass, ITypeSymbol NotificationHandledType)> notificationHandlerInfos,
+            CancellationToken cancellationToken)
+    {
+        var finalNotifications = new List<(ITypeSymbol NotificationClass, bool HasHandlerWithMediatorDependency)>();
+
+        foreach (var notificationType in foundNotificationTypes)
+        {
+            if (cancellationToken.IsCancellationRequested) break;
+
+            // Find handlers specifically for this notification type
+            var specificHandlers = notificationHandlerInfos
+                .Where(info => SymbolEqualityComparer.Default.Equals(info.NotificationHandledType, notificationType))
+                .Select(info => info.HandlerClass)
+                .OfType<INamedTypeSymbol>();
+
+            // Check if any of these handlers have the dependency
+            var anyHandlerHasDependency = false;
+            foreach (var handlerClass in specificHandlers)
+            {
+                if (ConstructorHasMediatorDependencies(handlerClass, out _))
+                {
+                    anyHandlerHasDependency = true;
+                    break; // Optimization: stop checking once one is found
+                }
+            }
+            finalNotifications.Add((NotificationClass: notificationType, HasHandlerWithMediatorDependency: anyHandlerHasDependency));
+        }
+        cancellationToken.ThrowIfCancellationRequested();
+        return finalNotifications;
+    }
+    
     private void VerifyRequestMatchesHandler(INamedTypeSymbol classSymbol, ITypeSymbol handledType)
     {
         var requestHandlerAttribute = handledType.GetAttributes()
-            .FirstOrDefault(attr => attr.AttributeClass?.Equals(_requestHandlerAttributeSymbol, SymbolEqualityComparer.Default) ?? false);
+            .FirstOrDefault(attr => SymbolEqualityComparer.Default.Equals(attr.AttributeClass, _requestHandlerAttributeSymbol));
 
-        if (requestHandlerAttribute == null)
-            return;
+        if (requestHandlerAttribute == null || requestHandlerAttribute.ConstructorArguments.Length == 0) return;
 
-        var attributeSymbol = (INamedTypeSymbol) requestHandlerAttribute.ConstructorArguments.Single().Value!;
-        if (!attributeSymbol.Equals(classSymbol, SymbolEqualityComparer.Default))
+        if (requestHandlerAttribute.ConstructorArguments.Single().Value is INamedTypeSymbol attributeSymbol)
         {
-            var syntaxReference = requestHandlerAttribute.ApplicationSyntaxReference;
-            throw new SourceGenerationException(
-                $"RequestHandlerAttribute: Handler type mismatch - expecting {classSymbol.ToDisplayString()}",
-                syntaxReference != null
-                    ? Location.Create(syntaxReference.SyntaxTree, syntaxReference.Span)
-                    : Location.None);
+            if (!SymbolEqualityComparer.Default.Equals(attributeSymbol, classSymbol))
+            {
+                var syntaxReference = requestHandlerAttribute.ApplicationSyntaxReference;
+                throw new SourceGenerationException(
+                    $"RequestHandlerAttribute: Handler type mismatch on '{handledType.ToDisplayString()}' - expecting handler '{classSymbol.ToDisplayString()}' but attribute points to '{attributeSymbol.ToDisplayString()}'.",
+                    syntaxReference != null ? Location.Create(syntaxReference.SyntaxTree, syntaxReference.Span) : Location.None);
+            }
         }
     }
 
     private void VerifyAdaptorMatchesTResponse(INamedTypeSymbol classSymbol, ITypeSymbol tResponse)
     {
         var responseTypeAdaptorAttribute = classSymbol.GetAttributes()
-            .FirstOrDefault(attr => attr.AttributeClass?.Equals(_responseAdaptorAttributeSymbol, SymbolEqualityComparer.Default) ?? false);
-        
-        if (responseTypeAdaptorAttribute == null)
-            return;
-        
+            .FirstOrDefault(attr => SymbolEqualityComparer.Default.Equals(attr.AttributeClass, _responseAdaptorAttributeSymbol));
+
+        if (responseTypeAdaptorAttribute == null) return;
+
         var responseWrapperType = GetAdaptorWrapperType(responseTypeAdaptorAttribute);
         if (tResponse is not INamedTypeSymbol unwrappedResponseType ||
             !SymbolEqualityComparer.Default.Equals(unwrappedResponseType.OriginalDefinition, responseWrapperType.OriginalDefinition))
         {
             var syntaxReference = responseTypeAdaptorAttribute.ApplicationSyntaxReference;
             throw new SourceGenerationException($"{nameof(PipelineBehaviorResponseAdaptorAttribute)}.{nameof(PipelineBehaviorResponseAdaptorAttribute.GenericsType)} does not match IPipelineBehavior's TResponse argument.",
-                syntaxReference != null
-                    ? Location.Create(syntaxReference.SyntaxTree, syntaxReference.Span)
-                    : Location.None);
+                syntaxReference != null ? Location.Create(syntaxReference.SyntaxTree, syntaxReference.Span) : Location.None);
         }
     }
 
     private void VerifyConstructorDoesNotHaveMediatorDependencies(INamedTypeSymbol classSymbol)
     {
-        if (!ConstructorHasMediatorDependencies(classSymbol, out var constructor))
-        {
-            return;
-        }
+        if (!ConstructorHasMediatorDependencies(classSymbol, out var constructor)) return;
 
-        var syntaxReference = constructor!.DeclaringSyntaxReferences[0];
-        throw new SourceGenerationException("PipelineBehavior's constructors are not allowed to take dependencies on IMediator, ISender or IPublisher.",
-                Location.Create(syntaxReference.SyntaxTree, syntaxReference.Span));
+        var syntaxReference = constructor!.DeclaringSyntaxReferences.FirstOrDefault();
+        var location = Location.None;
+        if (syntaxReference != null) location = Location.Create(syntaxReference.SyntaxTree, syntaxReference.Span);
+
+        throw new SourceGenerationException($"PipelineBehavior '{classSymbol.ToDisplayString()}' constructors are not allowed to take dependencies on IMediator, ISender, or IPublisher.", location);
     }
 
     private ITypeSymbol? TryUnwrapRequestTResponse(
@@ -194,60 +272,68 @@ public class SemanticAnalyzer
         (ITypeSymbol Class, ITypeSymbol TResponse) request)
     {
         var responseTypeAdaptorAttribute = b.Class.GetAttributes()
-            .FirstOrDefault(attr => attr.AttributeClass?.Equals(_responseAdaptorAttributeSymbol, SymbolEqualityComparer.Default) ?? false);
-        
-        if (responseTypeAdaptorAttribute == null)
-            return request.TResponse;
-        
+            .FirstOrDefault(attr => SymbolEqualityComparer.Default.Equals(attr.AttributeClass, _responseAdaptorAttributeSymbol));
+
+        if (responseTypeAdaptorAttribute == null) return request.TResponse;
+
         var responseWrapperType = GetAdaptorWrapperType(responseTypeAdaptorAttribute);
-        if (request.TResponse is INamedTypeSymbol unwrappedResponseType && 
+        if (request.TResponse is INamedTypeSymbol unwrappedResponseType &&
             SymbolEqualityComparer.Default.Equals(unwrappedResponseType.OriginalDefinition, responseWrapperType.OriginalDefinition))
-            return unwrappedResponseType.TypeArguments[0];
+        {
+            return unwrappedResponseType.TypeArguments.Length == 1 ? unwrappedResponseType.TypeArguments[0] : null;
+        }
 
         return null;
     }
 
     private static INamedTypeSymbol GetAdaptorWrapperType(AttributeData responseTypeAdaptorAttribute)
     {
-        var typeArgSymbol = (INamedTypeSymbol) responseTypeAdaptorAttribute.ConstructorArguments.Single().Value!;
+        if (responseTypeAdaptorAttribute.ConstructorArguments.Length != 1 ||
+            responseTypeAdaptorAttribute.ConstructorArguments[0].Value is not INamedTypeSymbol typeArgSymbol)
+        {
+             var syntaxReference = responseTypeAdaptorAttribute.ApplicationSyntaxReference;
+             throw new SourceGenerationException($"{nameof(PipelineBehaviorResponseAdaptorAttribute)} requires a single 'typeof(UnboundGeneric<>)' argument.",
+                     syntaxReference != null ? Location.Create(syntaxReference.SyntaxTree, syntaxReference.Span) : Location.None);
+        }
 
-        if (!typeArgSymbol.IsUnboundGenericType || typeArgSymbol.TypeArguments.Length != 1)
+        if (!typeArgSymbol.IsUnboundGenericType || typeArgSymbol.TypeParameters.Length != 1)
         {
             var syntaxReference = responseTypeAdaptorAttribute.ApplicationSyntaxReference;
-            throw new SourceGenerationException($"{nameof(PipelineBehaviorResponseAdaptorAttribute)}.{nameof(PipelineBehaviorResponseAdaptorAttribute.GenericsType)}  must be an unbound generic type with 1 argument.",
-                    syntaxReference != null
-                        ? Location.Create(syntaxReference.SyntaxTree, syntaxReference.Span)
-                        : Location.None);
+            throw new SourceGenerationException($"{nameof(PipelineBehaviorResponseAdaptorAttribute)}.{nameof(PipelineBehaviorResponseAdaptorAttribute.GenericsType)} must be an unbound generic type with 1 argument (e.g., typeof(Wrapper<>)).",
+                    syntaxReference != null ? Location.Create(syntaxReference.SyntaxTree, syntaxReference.Span) : Location.None);
         }
 
         return typeArgSymbol;
     }
-    
+
     private bool ConstructorHasMediatorDependencies(INamedTypeSymbol typeSymbol, out IMethodSymbol? ctor)
     {
-        foreach (var constructor in typeSymbol.Constructors)
+        ctor = null;
+        foreach (var constructor in typeSymbol.Constructors.Where(c => !c.IsStatic))
         {
-            // Skip static constructors if any
-            if (constructor.IsStatic)
-            {
-                continue;
-            }
-
             foreach (var parameter in constructor.Parameters)
             {
-                var paramType = parameter.Type;
+                if (parameter.Type.OriginalDefinition is not {} originalParamTypeDef) continue; // Skip if type or definition is null
 
-                if (SymbolEqualityComparer.Default.Equals(paramType.OriginalDefinition, _iMediatorSymbol) ||
-                    SymbolEqualityComparer.Default.Equals(paramType.OriginalDefinition, _iSenderSymbol) ||
-                    SymbolEqualityComparer.Default.Equals(paramType.OriginalDefinition, _iPublisherSymbol))
+                if (SymbolEqualityComparer.Default.Equals(originalParamTypeDef, _iMediatorSymbol) ||
+                    SymbolEqualityComparer.Default.Equals(originalParamTypeDef, _iSenderSymbol) ||
+                    SymbolEqualityComparer.Default.Equals(originalParamTypeDef, _iPublisherSymbol))
                 {
                     ctor = constructor;
                     return true;
                 }
             }
         }
-
-        ctor = null;
         return false;
+    }
+
+    private int GetOrder(ITypeSymbol typeSymbol)
+    {
+        var orderAttribute = typeSymbol.GetAttributes()
+            .FirstOrDefault(attr => SymbolEqualityComparer.Default.Equals(attr.AttributeClass, _orderAttributeSymbol));
+
+        return orderAttribute?.ConstructorArguments.Length > 0 && orderAttribute.ConstructorArguments[0].Value is int order
+               ? order
+               : int.MaxValue; // Default order if attribute is missing or invalid
     }
 }

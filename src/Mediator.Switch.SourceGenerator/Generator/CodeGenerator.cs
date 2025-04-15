@@ -22,7 +22,7 @@ public static class CodeGenerator
         });
         
         var notificationHandlerFields = notifications.Select(n =>
-            $"private readonly IEnumerable<Lazy<INotificationHandler<{n.Class}>>> _{n.Class.GetVariableName()}__Handlers;");
+            $"private readonly IEnumerable<{(n.hasMediatorRefInCtor ? $"Lazy<INotificationHandler<{n.Class}>>" : $"INotificationHandler<{n.Class}>")}> _{n.Class.GetVariableName()}__Handlers;");
 
         // Generate constructor parameters
         var constructorParams = handlers.Select(h => $"{(h.hasMediatorRefInCtor ? $"Lazy<{h.Class}>" : h.Class)} {h.Class.GetVariableName()}");
@@ -33,7 +33,7 @@ public static class CodeGenerator
                 $"{b.Class.ToString().DropGenerics()}<{request.Class}, {b.TResponse}> {b.Class.GetVariableName()}__{request.Class.GetVariableName()}");
         });
         constructorParams = constructorParams.Concat(behaviorParams)
-            .Concat(notifications.Select(n => $"IEnumerable<Lazy<INotificationHandler<{n.Class}>>> {n.Class.GetVariableName()}__Handlers"));
+            .Concat(notifications.Select(n => $"IEnumerable<{(n.hasMediatorRefInCtor ? $"Lazy<INotificationHandler<{n.Class}>>" : $"INotificationHandler<{n.Class}>")}> {n.Class.GetVariableName()}__Handlers"));
 
         // Generate constructor initializers
         var constructorInitializers = handlers.Select(h =>
@@ -85,7 +85,7 @@ public static class CodeGenerator
                               {
                                   foreach (var handler in _{{n.Class.GetVariableName()}}__Handlers)
                                   {
-                                      await handler.Value.Handle({{n.Class.GetVariableName()}}, cancellationToken);
+                                      await handler{{(n.hasMediatorRefInCtor ? ".Value" : "")}}.Handle({{n.Class.GetVariableName()}}, cancellationToken);
                                   }
                                   break;
                               }

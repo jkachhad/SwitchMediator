@@ -18,8 +18,9 @@ public static class Program
                 op.TargetAssemblies = [typeof(Program).Assembly];
                 op.ServiceLifetime = ServiceLifetime.Singleton;
                 op.OrderNotificationHandlers<UserLoggedInEvent>(
-                    typeof(UserLoggedInLogger),
-                    typeof(UserLoggedInAnalytics)
+                    typeof(UserLoggedInLogger)
+                    // any other types not specified above is assumed to have lower priority
+                    // e.g., typeof(UserLoggedInAnalytics)
                 );
             });
 
