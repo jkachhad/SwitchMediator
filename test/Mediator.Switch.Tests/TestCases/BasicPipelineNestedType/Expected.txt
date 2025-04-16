@@ -20,11 +20,11 @@ namespace Mediator.Switch;
 
 public class SwitchMediator : IMediator
 {
-    private readonly Lazy<Tests.BasicPipelineNestedType.PingHandler> _tests_BasicPipelineNestedType_PingHandler;
+    private readonly Tests.BasicPipelineNestedType.PingHandler _tests_BasicPipelineNestedType_PingHandler;
     private readonly Tests.BasicPipelineNestedType.GenericBehavior<Tests.BasicPipelineNestedType.Ping, Tests.BasicPipelineNestedType.Result<Tests.BasicPipelineNestedType.VersionedResponse>> _tests_BasicPipelineNestedType_GenericBehavior__tests_BasicPipelineNestedType_Ping;
 
     public SwitchMediator(
-        Lazy<Tests.BasicPipelineNestedType.PingHandler> tests_BasicPipelineNestedType_PingHandler,
+        Tests.BasicPipelineNestedType.PingHandler tests_BasicPipelineNestedType_PingHandler,
         Tests.BasicPipelineNestedType.GenericBehavior<Tests.BasicPipelineNestedType.Ping, Tests.BasicPipelineNestedType.Result<Tests.BasicPipelineNestedType.VersionedResponse>> tests_BasicPipelineNestedType_GenericBehavior__tests_BasicPipelineNestedType_Ping)
     {
         _tests_BasicPipelineNestedType_PingHandler = tests_BasicPipelineNestedType_PingHandler;
@@ -59,7 +59,7 @@ public class SwitchMediator : IMediator
     {
         return
             _tests_BasicPipelineNestedType_GenericBehavior__tests_BasicPipelineNestedType_Ping.Handle(request, () =>
-            /* Request Handler */ _tests_BasicPipelineNestedType_PingHandler.Value.Handle(request, cancellationToken),
+            /* Request Handler */ _tests_BasicPipelineNestedType_PingHandler.Handle(request, cancellationToken),
             cancellationToken);
     }
 

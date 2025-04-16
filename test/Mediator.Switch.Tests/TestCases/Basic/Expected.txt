@@ -20,10 +20,10 @@ namespace Mediator.Switch;
 
 public class SwitchMediator : IMediator
 {
-    private readonly Lazy<Tests.Basic.PingHandler> _tests_Basic_PingHandler;
+    private readonly Tests.Basic.PingHandler _tests_Basic_PingHandler;
 
     public SwitchMediator(
-        Lazy<Tests.Basic.PingHandler> tests_Basic_PingHandler)
+        Tests.Basic.PingHandler tests_Basic_PingHandler)
     {
         _tests_Basic_PingHandler = tests_Basic_PingHandler;
     }
@@ -55,7 +55,7 @@ public class SwitchMediator : IMediator
         CancellationToken cancellationToken)
     {
         return
-            /* Request Handler */ _tests_Basic_PingHandler.Value.Handle(request, cancellationToken);
+            /* Request Handler */ _tests_Basic_PingHandler.Handle(request, cancellationToken);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

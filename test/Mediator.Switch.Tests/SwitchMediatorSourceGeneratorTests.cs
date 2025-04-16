@@ -15,6 +15,7 @@ public class SwitchMediatorSourceGeneratorTests : CSharpSourceGeneratorTest<Swit
     
     [Theory]
     [InlineData("Basic")]
+    [InlineData("BasicRecordType")]
     [InlineData("MultipleRequests")]
     [InlineData("PolymorphicRequests")]
     [InlineData("Notifications")]
@@ -27,6 +28,9 @@ public class SwitchMediatorSourceGeneratorTests : CSharpSourceGeneratorTest<Swit
     [InlineData("NoMessages")]
     [InlineData("GenericsIgnored")]
     [InlineData("AbstractsIgnored")]
+    [InlineData("ReferencesMediator")]
+    [InlineData("ReferencesSender")]
+    [InlineData("ReferencesPublisher")]
     public async Task GeneratesSwitchMediatorCorrectly(string testCase)
     {
         var inputCode = await File.ReadAllTextAsync(Path.Combine("TestCases", testCase, "Input.cs"));
