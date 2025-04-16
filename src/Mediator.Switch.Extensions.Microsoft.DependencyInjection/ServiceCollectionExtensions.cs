@@ -18,7 +18,7 @@ public static class ServiceCollectionExtensions
     public static IServiceCollection AddMediator<TSwitchMediator>(this IServiceCollection services, Action<SwitchMediatorOptions>? configure)
         where TSwitchMediator : class, IMediator
     {
-        var options = new SwitchMediatorOptions(services);
+        var options = new SwitchMediatorOptions();
 
         configure?.Invoke(options);
 
@@ -48,29 +48,29 @@ public static class ServiceCollectionExtensions
                                        i.GetGenericTypeDefinition() == typeof(IPipelineBehavior<,>))))
             .ToList();
 
-        RegisterRequestHandlers(services, allTypes, options.ServiceLifetime);
-        RegisterNotificationHandlers(services, allTypes, options.ServiceLifetime);
-        RegisterPipelineBehaviors(services, allTypes, options.ServiceLifetime);
+        RegisterRequestHandlers(services, allTypes, options);
+        RegisterNotificationHandlers(services, allTypes, options);
+        RegisterPipelineBehaviors(services, allTypes, options);
 
         return services;
     }
 
-    private static void RegisterRequestHandlers(IServiceCollection services, IEnumerable<Type> allTypes, ServiceLifetime lifetime)
+    private static void RegisterRequestHandlers(IServiceCollection services, IEnumerable<Type> allTypes, SwitchMediatorOptions options)
     {
         foreach (var handlerType in allTypes
                      .Where(t => t.GetInterfaces().Any(i =>
                          i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IRequestHandler<,>))))
         {
-            services.TryAdd(new ServiceDescriptor(handlerType, handlerType, lifetime));
+            services.TryAdd(new ServiceDescriptor(handlerType, handlerType, options.ServiceLifetime));
             services.TryAdd(new ServiceDescriptor(typeof(Lazy<>).MakeGenericType(handlerType),
-                BuildLazyFactoryDelegate(handlerType), lifetime));
+                BuildLazyFactoryDelegate(handlerType), options.ServiceLifetime));
         }
     }
 
     private static void RegisterNotificationHandlers(
         IServiceCollection services,
         IEnumerable<Type> allTypes,
-        ServiceLifetime lifetime)
+        SwitchMediatorOptions options)
     {
         var notificationHandlerTypes = allTypes
             .Where(t => t.GetInterfaces().Any(i =>
@@ -80,7 +80,7 @@ public static class ServiceCollectionExtensions
         // 1. Register individual concrete handlers
         foreach (var handlerType in notificationHandlerTypes)
         {
-            services.TryAdd(new ServiceDescriptor(handlerType, handlerType, lifetime));
+            services.TryAdd(new ServiceDescriptor(handlerType, handlerType, options.ServiceLifetime));
         }
 
         // 2. Group handlers by the specific notification type they implement
@@ -103,14 +103,18 @@ public static class ServiceCollectionExtensions
         {
             var notificationType = kvp.Key; // TNotification
             var specificHandlerTypes = kvp.Value; // Type[] implementing INotificationHandler<TNotification>
-
+            if (options.OrderedNotificationHandlers.TryGetValue(notificationType, out var orderedHandlerTypes))
+            {
+                Sort(specificHandlerTypes, orderedHandlerTypes);
+            }
+            
             try
             {
                 // Create a closed generic method, e.g., OrderNotificationHandlers<MyNotification>
                 var concreteOrderMethod = orderMethodInfo.MakeGenericMethod(notificationType);
 
                 // Prepare arguments: IServiceCollection, Type[], ServiceLifetime
-                object[] methodArgs = [services, specificHandlerTypes, lifetime];
+                object[] methodArgs = [services, specificHandlerTypes, options.ServiceLifetime];
 
                 // Invoke the static method (instance is null)
                 concreteOrderMethod.Invoke(null, methodArgs);
@@ -123,25 +127,35 @@ public static class ServiceCollectionExtensions
         }
     }
 
-    private static void RegisterPipelineBehaviors(IServiceCollection services, IEnumerable<Type> allTypes, ServiceLifetime lifetime)
+    private static void RegisterPipelineBehaviors(IServiceCollection services, IEnumerable<Type> allTypes, SwitchMediatorOptions options)
     {
         foreach (var behaviorType in allTypes
                      .Where(t => t.GetInterfaces().Any(i =>
                          i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IPipelineBehavior<,>))))
         {
-            services.TryAdd(new ServiceDescriptor(behaviorType, behaviorType, lifetime));
+            services.TryAdd(new ServiceDescriptor(behaviorType, behaviorType, options.ServiceLifetime));
         }
     }
 
     internal static void OrderNotificationHandlers<TNotification>(this IServiceCollection services, Type[] handlerTypes, ServiceLifetime serviceLifetime)
-        where TNotification : INotification =>
+        where TNotification : INotification
+    {
+        services.TryAdd(new ServiceDescriptor(
+            typeof(IEnumerable<INotificationHandler<TNotification>>),
+            sp => handlerTypes.Select(handlerType => GetNotificationHandler(sp, handlerType)),
+            serviceLifetime));
+        
         services.TryAdd(new ServiceDescriptor(
             typeof(IEnumerable<Lazy<INotificationHandler<TNotification>>>),
-            sp => handlerTypes.Select(
-                handlerType => new Lazy<INotificationHandler<TNotification>>(() =>
-                    (INotificationHandler<TNotification>)sp.GetRequiredService(handlerType)
-                )),
+            sp => handlerTypes.Select(handlerType => 
+                new Lazy<INotificationHandler<TNotification>>(() => GetNotificationHandler(sp, handlerType))),
             serviceLifetime));
+        
+        return;
+
+        static INotificationHandler<TNotification> GetNotificationHandler(IServiceProvider sp, Type handlerType) => 
+            (INotificationHandler<TNotification>) sp.GetRequiredService(handlerType);
+    }
 
     private static Func<IServiceProvider, object> BuildLazyFactoryDelegate(Type serviceType)
     {
@@ -188,5 +202,26 @@ public static class ServiceCollectionExtensions
 
         // 9. Compile the expression tree into a delegate
         return outerLambda.Compile();
+    }
+    
+    public static void Sort(Type[] typesToSort, Type[] specificOrder)
+    {
+        if (specificOrder.Length == 0)
+        {
+            return;
+        }
+
+        Array.Sort(typesToSort, (Comparison<Type>) Comparison);
+        return;
+
+        // note: This is going to be more performant than creating a dictionary for lookups given a small number of types
+        int Comparison(Type x, Type y)
+        {
+            var indexX = Array.IndexOf(specificOrder, x);
+            var indexY = Array.IndexOf(specificOrder, y);
+            var keyX = indexX >= 0 ? indexX : specificOrder.Length;
+            var keyY = indexY >= 0 ? indexY : specificOrder.Length;
+            return keyX.CompareTo(keyY);
+        }
     }
 }

@@ -20,13 +20,13 @@ namespace Mediator.Switch;
 
 public class SwitchMediator : IMediator
 {
-    private readonly Lazy<Tests.OrderedPipeline.CalculationRequestHandler> _tests_OrderedPipeline_CalculationRequestHandler;
+    private readonly Tests.OrderedPipeline.CalculationRequestHandler _tests_OrderedPipeline_CalculationRequestHandler;
     private readonly Tests.OrderedPipeline.MonitoringBehavior<Tests.OrderedPipeline.CalculationRequest, int> _tests_OrderedPipeline_MonitoringBehavior__tests_OrderedPipeline_CalculationRequest;
     private readonly Tests.OrderedPipeline.ValidationBehavior<Tests.OrderedPipeline.CalculationRequest, int> _tests_OrderedPipeline_ValidationBehavior__tests_OrderedPipeline_CalculationRequest;
     private readonly Tests.OrderedPipeline.LoggingBehavior<Tests.OrderedPipeline.CalculationRequest, int> _tests_OrderedPipeline_LoggingBehavior__tests_OrderedPipeline_CalculationRequest;
 
     public SwitchMediator(
-        Lazy<Tests.OrderedPipeline.CalculationRequestHandler> tests_OrderedPipeline_CalculationRequestHandler,
+        Tests.OrderedPipeline.CalculationRequestHandler tests_OrderedPipeline_CalculationRequestHandler,
         Tests.OrderedPipeline.MonitoringBehavior<Tests.OrderedPipeline.CalculationRequest, int> tests_OrderedPipeline_MonitoringBehavior__tests_OrderedPipeline_CalculationRequest,
         Tests.OrderedPipeline.ValidationBehavior<Tests.OrderedPipeline.CalculationRequest, int> tests_OrderedPipeline_ValidationBehavior__tests_OrderedPipeline_CalculationRequest,
         Tests.OrderedPipeline.LoggingBehavior<Tests.OrderedPipeline.CalculationRequest, int> tests_OrderedPipeline_LoggingBehavior__tests_OrderedPipeline_CalculationRequest)
@@ -67,7 +67,7 @@ public class SwitchMediator : IMediator
             _tests_OrderedPipeline_LoggingBehavior__tests_OrderedPipeline_CalculationRequest.Handle(request, () =>
             _tests_OrderedPipeline_ValidationBehavior__tests_OrderedPipeline_CalculationRequest.Handle(request, () =>
             _tests_OrderedPipeline_MonitoringBehavior__tests_OrderedPipeline_CalculationRequest.Handle(request, () =>
-            /* Request Handler */ _tests_OrderedPipeline_CalculationRequestHandler.Value.Handle(request, cancellationToken),
+            /* Request Handler */ _tests_OrderedPipeline_CalculationRequestHandler.Handle(request, cancellationToken),
             cancellationToken),
             cancellationToken),
             cancellationToken);

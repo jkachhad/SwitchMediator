@@ -26,6 +26,7 @@ public class SwitchMediatorBaselineUpdateTests
 
     [TheoryRunnableInDebugOnly]
     [InlineData("Basic")]
+    [InlineData("BasicRecordType")]
     [InlineData("MultipleRequests")]
     [InlineData("PolymorphicRequests")]
     [InlineData("Notifications")]
@@ -38,6 +39,9 @@ public class SwitchMediatorBaselineUpdateTests
     [InlineData("NoMessages")]
     [InlineData("GenericsIgnored")]
     [InlineData("AbstractsIgnored")]
+    [InlineData("ReferencesMediator")]
+    [InlineData("ReferencesSender")]
+    [InlineData("ReferencesPublisher")]
     public async Task UpdateExpectedOutputFile(string testCase)
     {
         await InitializeReferencesAsync(_output); // Ensure references are ready

@@ -5,13 +5,13 @@ namespace Mediator.Switch.SourceGenerator.Generator;
 
 public static class CodeGenerator
 {
-    public static string Generate(List<(ITypeSymbol Class, ITypeSymbol TRequest, ITypeSymbol TResponse)> handlers,
-        List<((ITypeSymbol Class, ITypeSymbol TResponse) Request, List<(ITypeSymbol Class, ITypeSymbol TRequest,
-            ITypeSymbol TResponse, IReadOnlyList<ITypeParameterSymbol> TypeParameters)> Behaviors)> requestBehaviors,
-        List<ITypeSymbol> notifications)
+    public static string Generate(
+        List<(ITypeSymbol Class, ITypeSymbol TRequest, ITypeSymbol TResponse, bool hasMediatorRefInCtor)> handlers,
+        List<((ITypeSymbol Class, ITypeSymbol TResponse) Request, List<(ITypeSymbol Class, ITypeSymbol TRequest, ITypeSymbol TResponse, IReadOnlyList<ITypeParameterSymbol> TypeParameters)> Behaviors)> requestBehaviors,
+        List<(ITypeSymbol Class, bool hasMediatorRefInCtor)> notifications)
     {
         // Generate fields
-        var handlerFields = handlers.Select(h => $"private readonly Lazy<{h.Class}> _{h.Class.GetVariableName()};");
+        var handlerFields = handlers.Select(h => $"private readonly {(h.hasMediatorRefInCtor ? $"Lazy<{h.Class}>" : h.Class)} _{h.Class.GetVariableName()};");
 
         // Generate behavior fields specific to each request, respecting constraints
         var behaviorFields = requestBehaviors.SelectMany(r =>
@@ -22,10 +22,10 @@ public static class CodeGenerator
         });
         
         var notificationHandlerFields = notifications.Select(n =>
-            $"private readonly IEnumerable<Lazy<INotificationHandler<{n}>>> _{n.GetVariableName()}__Handlers;");
+            $"private readonly IEnumerable<{(n.hasMediatorRefInCtor ? $"Lazy<INotificationHandler<{n.Class}>>" : $"INotificationHandler<{n.Class}>")}> _{n.Class.GetVariableName()}__Handlers;");
 
         // Generate constructor parameters
-        var constructorParams = handlers.Select(h => $"Lazy<{h.Class}> {h.Class.GetVariableName()}");
+        var constructorParams = handlers.Select(h => $"{(h.hasMediatorRefInCtor ? $"Lazy<{h.Class}>" : h.Class)} {h.Class.GetVariableName()}");
         var behaviorParams = requestBehaviors.SelectMany(r =>
         {
             var (request, applicableBehaviors) = r;
@@ -33,7 +33,7 @@ public static class CodeGenerator
                 $"{b.Class.ToString().DropGenerics()}<{request.Class}, {b.TResponse}> {b.Class.GetVariableName()}__{request.Class.GetVariableName()}");
         });
         constructorParams = constructorParams.Concat(behaviorParams)
-            .Concat(notifications.Select(n => $"IEnumerable<Lazy<INotificationHandler<{n}>>> {n.GetVariableName()}__Handlers"));
+            .Concat(notifications.Select(n => $"IEnumerable<{(n.hasMediatorRefInCtor ? $"Lazy<INotificationHandler<{n.Class}>>" : $"INotificationHandler<{n.Class}>")}> {n.Class.GetVariableName()}__Handlers"));
 
         // Generate constructor initializers
         var constructorInitializers = handlers.Select(h =>
@@ -46,7 +46,7 @@ public static class CodeGenerator
         });
         constructorInitializers = constructorInitializers.Concat(behaviorInitializers)
             .Concat(notifications.Select(n =>
-                $"_{n.GetVariableName()}__Handlers = {n.GetVariableName()}__Handlers;"));
+                $"_{n.Class.GetVariableName()}__Handlers = {n.Class.GetVariableName()}__Handlers;"));
 
         // Generate Send method switch cases
         var sendCases = requestBehaviors
@@ -64,7 +64,7 @@ public static class CodeGenerator
             var (request, applicableBehaviors) = r;
             var handler = handlers.FirstOrDefault(h => h.TRequest.Equals(request.Class, SymbolEqualityComparer.Default));
             if (handler == default) return null;
-            var chain = BehaviorChainBuilder.Build(applicableBehaviors, request.Class.GetVariableName(), $"_{handler.Class.GetVariableName()}.Value.Handle");
+            var chain = BehaviorChainBuilder.Build(applicableBehaviors, request.Class.GetVariableName(), $"_{handler.Class.GetVariableName()}{(handler.hasMediatorRefInCtor ? ".Value" : "")}.Handle");
             return $$"""
                      private Task<{{request.TResponse}}> Handle{{request.Class.Name}}WithBehaviors(
                              {{request.Class}} request,
@@ -78,14 +78,14 @@ public static class CodeGenerator
 
         // Generate Publish method switch cases
         var publishCases = notifications
-            .OrderBy(n => n, Comparers.TypeHierarchyComparer)
+            .OrderBy(n => n.Class, Comparers.TypeHierarchyComparer)
             .Select(n =>
                 $$"""
-                  case {{n}} {{n.GetVariableName()}}:
+                  case {{n.Class}} {{n.Class.GetVariableName()}}:
                               {
-                                  foreach (var handler in _{{n.GetVariableName()}}__Handlers)
+                                  foreach (var handler in _{{n.Class.GetVariableName()}}__Handlers)
                                   {
-                                      await handler.Value.Handle({{n.GetVariableName()}}, cancellationToken);
+                                      await handler{{(n.hasMediatorRefInCtor ? ".Value" : "")}}.Handle({{n.Class.GetVariableName()}}, cancellationToken);
                                   }
                                   break;
                               }
