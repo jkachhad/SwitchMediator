@@ -74,9 +74,8 @@ public class SemanticAnalyzer
         List<(ITypeSymbol HandlerClass, ITypeSymbol NotificationHandledType)> notificationHandlerInfos)
     {
         var model = _compilation.GetSemanticModel(typeSyntax.SyntaxTree);
-        if (model.GetDeclaredSymbol(typeSyntax, cancellationToken) is not { } typeSymbol || typeSymbol.IsAbstract)
+        if (model.GetDeclaredSymbol(typeSyntax, cancellationToken) is not {Kind: SymbolKind.NamedType} typeSymbol)
         {
-            // Skip non-named types or abstract classes early
             return;
         }
 
@@ -107,7 +106,7 @@ public class SemanticAnalyzer
             SymbolEqualityComparer.Default.Equals(i.OriginalDefinition, _iRequestHandlerSymbol));
 
         // Ensure it's a concrete implementation of IRequestHandler<TRequest, TResponse>
-        if (handlerInterface != null && typeSymbol.TypeArguments.Length == 0)
+        if (handlerInterface != null && typeSymbol.TypeArguments.Length == 0 && !typeSymbol.IsAbstract)
         {
             var tRequest = handlerInterface.TypeArguments[0];
             var tResponse = handlerInterface.TypeArguments[1];
@@ -123,7 +122,7 @@ public class SemanticAnalyzer
             SymbolEqualityComparer.Default.Equals(i.OriginalDefinition, _iPipelineBehaviorSymbol));
 
         // Ensure it's a concrete implementation of IPipelineBehavior<TRequest, TResponse>
-        if (behaviorInterface != null) // Abstract check is done in AnalyzeTypeSyntax
+        if (behaviorInterface != null && !typeSymbol.IsAbstract)
         {
             var tRequest = behaviorInterface.TypeArguments[0];
             var tResponse = behaviorInterface.TypeArguments[1];
@@ -140,7 +139,7 @@ public class SemanticAnalyzer
             SymbolEqualityComparer.Default.Equals(i.OriginalDefinition, _iNotificationSymbol));
 
         // Ensure it's a concrete implementation of INotification
-        if (notificationInterface != null && typeSymbol.TypeArguments.Length == 0)
+        if (notificationInterface != null && typeSymbol.TypeArguments.Length == 0 && !typeSymbol.IsAbstract)
         {
             // Avoid adding duplicates if a type appears multiple times (e.g., partial classes)
             if (!foundNotificationTypes.Contains(typeSymbol, SymbolEqualityComparer.Default))

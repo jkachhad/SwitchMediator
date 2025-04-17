@@ -17,10 +17,8 @@ public class TypeHierarchyComparer : IComparer<ITypeSymbol>
         if (y == null) return -1;
 
         if (x.IsDerivedFrom(y)) return -1;
-
         if (y.IsDerivedFrom(x)) return 1;
 
-        // If neither derives from the other, maintain original order
-        return string.Compare(x.ToString(), y.ToString(), StringComparison.Ordinal);
+        return 0;
     }
 }

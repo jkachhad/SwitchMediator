@@ -1,7 +1,7 @@
 using System.Reflection;
 using Microsoft.CodeAnalysis.Testing;
 
-namespace Mediator.Switch.Tests;
+namespace Mediator.Switch.SourceGenerator.Tests;
 
 public static class TestDefinitions
 {

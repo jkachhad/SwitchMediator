@@ -9,7 +9,7 @@ using Microsoft.CodeAnalysis.Testing;
 using Xunit;
 using Xunit.Abstractions;
 
-namespace Mediator.Switch.Tests;
+namespace Mediator.Switch.SourceGenerator.Tests;
 
 public class SwitchMediatorBaselineUpdateTests
 {
