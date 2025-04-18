@@ -64,7 +64,14 @@ public static class CodeGenerator
                         h.TRequest.Equals(current, SymbolEqualityComparer.Default));
                     if (handler != default)
                     {
-                        return $"case {r.Request.Class} {r.Request.Class.GetVariableName()}:\n                return ToResponse<Task<TResponse>>(\n                    Handle_{current.GetVariableName(false)}({r.Request.Class.GetVariableName()}, cancellationToken));";
+                        //return $"case {r.Request.Class} {r.Request.Class.GetVariableName()}:\n                return ToResponse<Task<TResponse>>(\n                    Handle_{current.GetVariableName(false)}({r.Request.Class.GetVariableName()}, cancellationToken));";
+                        return $$"""
+                                             { // case
+                                                 typeof({{r.Request.Class}}), (instance, request, cancellationToken) =>
+                                                     instance.Handle_{{current.GetVariableName(false)}}(
+                                                         ({{r.Request.Class}}) request, cancellationToken)
+                                             }
+                                 """;
                     }
                     current = current.BaseType;
                 } while (current != null &&
@@ -163,15 +170,23 @@ public static class CodeGenerator
                   }
                   
                   #endregion
-              
+
                   public Task<TResponse> Send<TResponse>(IRequest<TResponse> request, CancellationToken cancellationToken = default)
                   {
-                      switch (request)
+                      if (SendSwitchCase.Cases.TryGetValue(request.GetType(), out var handle))
                       {
-                          {{string.Join("\n            ", sendCases)}}
-                          default:
-                              throw new ArgumentException($"No handler for {request.GetType().Name}");
+                          return (Task<TResponse>)handle(this, request, cancellationToken);
                       }
+                      
+                      throw new ArgumentException($"No handler for {request.GetType().Name}");
+                  }
+                  
+                  private static class SendSwitchCase
+                  {
+                      public static readonly Dictionary<Type, Func<SwitchMediator, object, CancellationToken, object>> Cases = new Dictionary<Type, Func<SwitchMediator, object, CancellationToken, object>>
+                      {
+              {{string.Join(",\n", sendCases)}}
+                      };
                   }
               
                   public async Task Publish(INotification notification, CancellationToken cancellationToken = default)
