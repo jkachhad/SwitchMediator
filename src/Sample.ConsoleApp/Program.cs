@@ -13,7 +13,7 @@ public static class Program
             .AddValidatorsFromAssembly(typeof(Program).Assembly)
             
             // Register SwitchMediator
-            .AddMediator<SwitchMediator2>(op =>
+            .AddMediator<SwitchMediator>(op =>
             {
                 op.TargetAssemblies = [typeof(Program).Assembly];
                 op.ServiceLifetime = ServiceLifetime.Singleton;

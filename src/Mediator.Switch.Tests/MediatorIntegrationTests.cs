@@ -103,6 +103,25 @@ public class MediatorIntegrationTests : MediatorTestBase
     }
 
     [Fact]
+    public async Task Publish_DerivedUserLoggedInEvent_UsesUserLoggedInEventHandler_AsFallback()
+    {
+        // Arrange
+        var notification = new DerivedUserLoggedInEvent(999);
+
+        // Act
+        await Publisher.Publish(notification);
+
+        // Assert
+        Assert.Equal(2, _notificationTracker.ExecutionOrder.Count); // Both handlers should have run
+
+        // Verify order
+        Assert.True(_notificationTracker.ExecutionOrder.TryDequeue(out var firstHandler));
+        Assert.True(_notificationTracker.ExecutionOrder.TryDequeue(out var secondHandler));
+        Assert.Equal(nameof(TestUserLoggedInLogger), firstHandler); // Check order based on DI config in base class
+        Assert.Equal(nameof(TestUserLoggedInAnalytics), secondHandler);
+    }
+
+    [Fact]
     public async Task Send_GetUserRequest_AuditAndVersionBehaviorsRun()
     {
         // Arrange: AuditBehavior applies to IAuditableRequest (GetUserRequest)
