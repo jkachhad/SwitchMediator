@@ -6,6 +6,7 @@ namespace Mediator.Switch.SourceGenerator.Generator;
 public static class CodeGenerator
 {
     public static string Generate(
+        ITypeSymbol iRequestType,
         List<(ITypeSymbol Class, ITypeSymbol TRequest, ITypeSymbol TResponse, bool hasMediatorRefInCtor)> handlers,
         List<((ITypeSymbol Class, ITypeSymbol TResponse) Request, List<(ITypeSymbol Class, ITypeSymbol TRequest, ITypeSymbol TResponse, IReadOnlyList<ITypeParameterSymbol> TypeParameters)> Behaviors)> requestBehaviors,
         List<(ITypeSymbol Class, bool hasMediatorRefInCtor)> notifications)
@@ -50,7 +51,7 @@ public static class CodeGenerator
 
         // Generate Send method switch cases
         var sendCases = requestBehaviors
-            .OrderBy(r => r.Request.Class, Comparers.TypeHierarchyComparer)
+            .OrderBy(r => r.Request.Class, new TypeHierarchyComparer(iRequestType, requestBehaviors.Select(r => r.Request.Class)))
             .Select(r =>
             {
                 var handler = handlers.FirstOrDefault(h => h.TRequest.Equals(r.Request.Class, SymbolEqualityComparer.Default));
@@ -78,7 +79,7 @@ public static class CodeGenerator
 
         // Generate Publish method switch cases
         var publishCases = notifications
-            .OrderBy(n => n.Class, Comparers.TypeHierarchyComparer)
+            .OrderBy(n => n.Class, new TypeHierarchyComparer(iRequestType, notifications.Select(n => n.Class)))
             .Select(n =>
                 $$"""
                   case {{n.Class}} {{n.Class.GetVariableName()}}:

@@ -1,9 +1,8 @@
-﻿using Mediator.Switch.SourceGenerator;
-using Microsoft.CodeAnalysis.CSharp.Testing;
+﻿using Microsoft.CodeAnalysis.CSharp.Testing;
 using Microsoft.CodeAnalysis.Testing;
 using Xunit;
 
-namespace Mediator.Switch.Tests;
+namespace Mediator.Switch.SourceGenerator.Tests;
 
 public class SwitchMediatorSourceGeneratorTests : CSharpSourceGeneratorTest<SwitchMediatorSourceGenerator, DefaultVerifier>
 {
