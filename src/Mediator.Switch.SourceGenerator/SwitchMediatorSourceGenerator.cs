@@ -21,9 +21,13 @@ namespace Mediator.Switch.SourceGenerator
             {
                 var cancellationToken = context.CancellationToken;
                 var analyzer = new SemanticAnalyzer(context.Compilation);
-                var (handlers, requestBehaviors, notifications) = analyzer.Analyze(receiver.Types, cancellationToken);
+                var (handlers, requestBehaviors, notificationHandlers, notifications) =
+                    analyzer.Analyze(receiver.Types, cancellationToken);
 
-                var sourceCode = CodeGenerator.Generate(analyzer.IRequestSymbol, handlers, requestBehaviors, notifications);
+                cancellationToken.ThrowIfCancellationRequested();
+                
+                var sourceCode = CodeGenerator.Generate(
+                    analyzer.IRequestSymbol, analyzer.INotificationSymbol, handlers, requestBehaviors, notificationHandlers, notifications);
 
                 context.AddSource("SwitchMediator.g.cs", sourceCode);
             }

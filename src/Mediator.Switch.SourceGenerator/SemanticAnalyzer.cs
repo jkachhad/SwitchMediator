@@ -22,6 +22,7 @@ public class SemanticAnalyzer
     private readonly INamedTypeSymbol _requestHandlerAttributeSymbol;
     
     public INamedTypeSymbol IRequestSymbol => _iRequestSymbol;
+    public INamedTypeSymbol INotificationSymbol => _iNotificationSymbol;
 
     public SemanticAnalyzer(Compilation compilation)
     {
@@ -40,40 +41,40 @@ public class SemanticAnalyzer
         _requestHandlerAttributeSymbol = compilation.GetTypeByMetadataName("Mediator.Switch.RequestHandlerAttribute") ?? throw new InvalidOperationException("Could not find Mediator.Switch.RequestHandlerAttribute");
     }
 
-    public (
-        List<(ITypeSymbol Class, ITypeSymbol TRequest, ITypeSymbol TResponse, bool hasMediatorRefInCtor)> Handlers,
+    public (List<(ITypeSymbol Class, ITypeSymbol TRequest, ITypeSymbol TResponse, bool HasMediatorRefInCtor)> Handlers,
         List<((ITypeSymbol Class, ITypeSymbol TResponse) Request, List<(ITypeSymbol Class, ITypeSymbol TRequest, ITypeSymbol TResponse, IReadOnlyList<ITypeParameterSymbol> TypeParameters)> Behaviors)> RequestBehaviors,
-        List<(ITypeSymbol NotificationClass, bool HasHandlerWithMediatorDependency)> Notifications
-    ) Analyze(List<TypeDeclarationSyntax> types, CancellationToken cancellationToken)
+        List<(ITypeSymbol Class, ITypeSymbol TNotification, bool HasMediatorRefInCtor)> NotificationHandlers,
+        List<(ITypeSymbol NotificationClass, bool HasMediatorRefInCtor)> Notifications)
+        Analyze(List<TypeDeclarationSyntax> types, CancellationToken cancellationToken)
     {
         var requests = new List<(ITypeSymbol Class, ITypeSymbol TResponse)>();
-        var handlers = new List<(ITypeSymbol Class, ITypeSymbol TRequest, ITypeSymbol TResponse, bool hasMediatorRefInCtor)>();
+        var handlers = new List<(ITypeSymbol Class, ITypeSymbol TRequest, ITypeSymbol TResponse, bool HasMediatorRefInCtor)>();
         var behaviors = new List<(ITypeSymbol Class, ITypeSymbol TRequest, ITypeSymbol TResponse, IReadOnlyList<ITypeParameterSymbol> TypeParameters)>();
-        var foundNotificationTypes = new List<ITypeSymbol>();
-        var notificationHandlerInfos = new List<(ITypeSymbol HandlerClass, ITypeSymbol NotificationHandledType)>();
+        var notifications = new List<ITypeSymbol>();
+        var notificationHandlers = new List<(ITypeSymbol Class, ITypeSymbol TNotification, bool HasMediatorRefInCtor)>();
 
         foreach (var typeSyntax in types)
         {
             if (cancellationToken.IsCancellationRequested) break;
-            AnalyzeTypeSyntax(typeSyntax, cancellationToken, requests, handlers, behaviors, foundNotificationTypes, notificationHandlerInfos);
+            AnalyzeTypeSyntax(typeSyntax, cancellationToken, requests, handlers, behaviors, notifications, notificationHandlers);
         }
 
         cancellationToken.ThrowIfCancellationRequested();
 
         var requestBehaviors = ProcessRequestBehaviors(requests, behaviors);
-        var finalNotifications = DetermineNotificationHandlerDependencies(foundNotificationTypes, notificationHandlerInfos, cancellationToken);
+        var finalNotifications = DetermineNotificationHandlerDependencies(notifications, notificationHandlers);
 
-        return (handlers, requestBehaviors, finalNotifications);
+        return (handlers, requestBehaviors, notificationHandlers, finalNotifications);
     }
 
     private void AnalyzeTypeSyntax(
         TypeDeclarationSyntax typeSyntax,
         CancellationToken cancellationToken,
         List<(ITypeSymbol Class, ITypeSymbol TResponse)> requests,
-        List<(ITypeSymbol Class, ITypeSymbol TRequest, ITypeSymbol TResponse, bool hasMediatorRefInCtor)> handlers,
+        List<(ITypeSymbol Class, ITypeSymbol TRequest, ITypeSymbol TResponse, bool HasMediatorRefInCtor)> handlers,
         List<(ITypeSymbol Class, ITypeSymbol TRequest, ITypeSymbol TResponse, IReadOnlyList<ITypeParameterSymbol> TypeParameters)> behaviors,
-        List<ITypeSymbol> foundNotificationTypes,
-        List<(ITypeSymbol HandlerClass, ITypeSymbol NotificationHandledType)> notificationHandlerInfos)
+        List<ITypeSymbol> notifications,
+        List<(ITypeSymbol Class, ITypeSymbol TNotification, bool HasMediatorRefInCtor)> notificationHandlers)
     {
         var model = _compilation.GetSemanticModel(typeSyntax.SyntaxTree);
         if (model.GetDeclaredSymbol(typeSyntax, cancellationToken) is not {Kind: SymbolKind.NamedType} typeSymbol)
@@ -85,8 +86,8 @@ public class SemanticAnalyzer
         TryAddRequest(typeSymbol, requests);
         TryAddRequestHandler(typeSymbol, handlers);
         TryAddPipelineBehavior(typeSymbol, behaviors);
-        TryAddNotification(typeSymbol, foundNotificationTypes);
-        TryAddNotificationHandlerInfo(typeSymbol, notificationHandlerInfos);
+        TryAddNotification(typeSymbol, notifications);
+        TryAddNotificationHandler(typeSymbol, notificationHandlers);
     }
 
     private void TryAddRequest(INamedTypeSymbol typeSymbol, List<(ITypeSymbol Class, ITypeSymbol TResponse)> requests)
@@ -102,7 +103,7 @@ public class SemanticAnalyzer
         }
     }
 
-    private void TryAddRequestHandler(INamedTypeSymbol typeSymbol, List<(ITypeSymbol Class, ITypeSymbol TRequest, ITypeSymbol TResponse, bool hasMediatorRefInCtor)> handlers)
+    private void TryAddRequestHandler(INamedTypeSymbol typeSymbol, List<(ITypeSymbol Class, ITypeSymbol TRequest, ITypeSymbol TResponse, bool HasMediatorRefInCtor)> handlers)
     {
         var handlerInterface = typeSymbol.AllInterfaces.FirstOrDefault(i =>
             SymbolEqualityComparer.Default.Equals(i.OriginalDefinition, _iRequestHandlerSymbol));
@@ -151,7 +152,7 @@ public class SemanticAnalyzer
         }
     }
 
-    private void TryAddNotificationHandlerInfo(INamedTypeSymbol typeSymbol, List<(ITypeSymbol HandlerClass, ITypeSymbol NotificationHandledType)> notificationHandlerInfos)
+    private void TryAddNotificationHandler(INamedTypeSymbol typeSymbol, List<(ITypeSymbol Class, ITypeSymbol TNotification, bool HasMediatorRefInCtor)> notificationHandlers)
     {
         var notificationHandlerInterface = typeSymbol.AllInterfaces.FirstOrDefault(i =>
             SymbolEqualityComparer.Default.Equals(i.OriginalDefinition, _iNotificationHandlerSymbol));
@@ -159,10 +160,11 @@ public class SemanticAnalyzer
         // Ensure it's a concrete implementation of INotificationHandler<TNotification>
         if (notificationHandlerInterface != null && typeSymbol.TypeArguments.Length == 0)
         {
-            var notificationHandledType = notificationHandlerInterface.TypeArguments.FirstOrDefault();
-            if (notificationHandledType != null)
+            var notification = notificationHandlerInterface.TypeArguments.FirstOrDefault();
+            if (notification != null)
             {
-                notificationHandlerInfos.Add((HandlerClass: typeSymbol, NotificationHandledType: notificationHandledType));
+                var hasDependency = ConstructorHasMediatorDependencies(typeSymbol, out _);
+                notificationHandlers.Add((typeSymbol, notification, hasDependency));
             }
         }
     }
@@ -187,22 +189,18 @@ public class SemanticAnalyzer
             .ToList();
     }
 
-    private List<(ITypeSymbol NotificationClass, bool HasHandlerWithMediatorDependency)>
-        DetermineNotificationHandlerDependencies(
-            List<ITypeSymbol> foundNotificationTypes,
-            List<(ITypeSymbol HandlerClass, ITypeSymbol NotificationHandledType)> notificationHandlerInfos,
-            CancellationToken cancellationToken)
+    private List<(ITypeSymbol Class, bool HasMediatorRefInCtor)> DetermineNotificationHandlerDependencies(
+            List<ITypeSymbol> notifications,
+            List<(ITypeSymbol Class, ITypeSymbol TNotification, bool HasMediatorRefInCtor)> notificationHandlers)
     {
-        var finalNotifications = new List<(ITypeSymbol NotificationClass, bool HasHandlerWithMediatorDependency)>();
+        var finalNotifications = new List<(ITypeSymbol Class, bool HasMediatorRefInCtor)>();
 
-        foreach (var notificationType in foundNotificationTypes)
+        foreach (var notificationType in notifications)
         {
-            if (cancellationToken.IsCancellationRequested) break;
-
             // Find handlers specifically for this notification type
-            var specificHandlers = notificationHandlerInfos
-                .Where(info => SymbolEqualityComparer.Default.Equals(info.NotificationHandledType, notificationType))
-                .Select(info => info.HandlerClass)
+            var specificHandlers = notificationHandlers
+                .Where(info => SymbolEqualityComparer.Default.Equals(info.TNotification, notificationType))
+                .Select(info => info.Class)
                 .OfType<INamedTypeSymbol>();
 
             // Check if any of these handlers have the dependency
@@ -215,9 +213,8 @@ public class SemanticAnalyzer
                     break; // Optimization: stop checking once one is found
                 }
             }
-            finalNotifications.Add((NotificationClass: notificationType, HasHandlerWithMediatorDependency: anyHandlerHasDependency));
+            finalNotifications.Add((Class: notificationType, HasMediatorRefInCtor: anyHandlerHasDependency));
         }
-        cancellationToken.ThrowIfCancellationRequested();
         return finalNotifications;
     }
     

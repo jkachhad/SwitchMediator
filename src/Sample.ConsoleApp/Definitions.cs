@@ -36,11 +36,29 @@ public record CreateOrderRequest(string Product) : IRequest<int>, ITransactional
     public Guid TransactionId { get; } = Guid.NewGuid();
 }
 
+[RequestHandler(typeof(AnimalRequestHandler))]
+public abstract record Animal : IRequest<Unit>
+{
+    public abstract string AnimalType { get; } 
+}
+
+public record Dog : Animal
+{
+    public override string AnimalType => "Dog";
+}
+
+public record Cat : Animal
+{
+    public override string AnimalType => "Cat";
+}
+
 // Notification type
 public class UserLoggedInEvent(int userId) : INotification
 {
     public int UserId { get; } = userId;
 }
+
+public class DerivedUserLoggedInEvent(int userId) : UserLoggedInEvent(userId);
 
 // Response models
 public class User : IVersionedResponse
@@ -76,9 +94,22 @@ public class CreateOrderRequestHandler : IRequestHandler<CreateOrderRequest, int
         42; // Simulated order ID
 }
 
+public class AnimalRequestHandler : IRequestHandler<Animal, Unit>
+{
+    public async Task<Unit> Handle(Animal request, CancellationToken cancellationToken = default)
+    {
+        Console.WriteLine(request.AnimalType);
+        return Unit.Value;
+    }
+}
+
 // Notification Handlers
 public class UserLoggedInLogger : INotificationHandler<UserLoggedInEvent>
 {
+    public UserLoggedInLogger(IPublisher publisher)
+    {
+    }
+    
     public async Task Handle(UserLoggedInEvent notification, CancellationToken cancellationToken = default) =>
         Console.WriteLine($"Logged: User {notification.UserId} logged in.");
 }

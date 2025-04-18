@@ -7,12 +7,15 @@ public static class CodeGenerator
 {
     public static string Generate(
         ITypeSymbol iRequestType,
-        List<(ITypeSymbol Class, ITypeSymbol TRequest, ITypeSymbol TResponse, bool hasMediatorRefInCtor)> handlers,
-        List<((ITypeSymbol Class, ITypeSymbol TResponse) Request, List<(ITypeSymbol Class, ITypeSymbol TRequest, ITypeSymbol TResponse, IReadOnlyList<ITypeParameterSymbol> TypeParameters)> Behaviors)> requestBehaviors,
-        List<(ITypeSymbol Class, bool hasMediatorRefInCtor)> notifications)
+        ITypeSymbol iNotificationType,
+        List<(ITypeSymbol Class, ITypeSymbol TRequest, ITypeSymbol TResponse, bool HasMediatorRefInCtor)> handlers,
+        List<((ITypeSymbol Class, ITypeSymbol TResponse) Request, List<(ITypeSymbol Class, ITypeSymbol TRequest,
+            ITypeSymbol TResponse, IReadOnlyList<ITypeParameterSymbol> TypeParameters)> Behaviors)> requestBehaviors,
+        List<(ITypeSymbol Class, ITypeSymbol TNotification, bool HasMediatorRefInCtor)> notificationHandlers,
+        List<(ITypeSymbol Class, bool HasMediatorRefInCtor)> notifications)
     {
         // Generate fields
-        var handlerFields = handlers.Select(h => $"private readonly {(h.hasMediatorRefInCtor ? $"Lazy<{h.Class}>" : h.Class)} _{h.Class.GetVariableName()};");
+        var handlerFields = handlers.Select(h => $"private readonly {(h.HasMediatorRefInCtor ? $"Lazy<{h.Class}>" : h.Class)} _{h.Class.GetVariableName()};");
 
         // Generate behavior fields specific to each request, respecting constraints
         var behaviorFields = requestBehaviors.SelectMany(r =>
@@ -23,10 +26,10 @@ public static class CodeGenerator
         });
         
         var notificationHandlerFields = notifications.Select(n =>
-            $"private readonly IEnumerable<{(n.hasMediatorRefInCtor ? $"Lazy<INotificationHandler<{n.Class}>>" : $"INotificationHandler<{n.Class}>")}> _{n.Class.GetVariableName()}__Handlers;");
+            $"private readonly IEnumerable<{(n.HasMediatorRefInCtor ? $"Lazy<INotificationHandler<{n.Class}>>" : $"INotificationHandler<{n.Class}>")}> _{n.Class.GetVariableName()}__Handlers;");
 
         // Generate constructor parameters
-        var constructorParams = handlers.Select(h => $"{(h.hasMediatorRefInCtor ? $"Lazy<{h.Class}>" : h.Class)} {h.Class.GetVariableName()}");
+        var constructorParams = handlers.Select(h => $"{(h.HasMediatorRefInCtor ? $"Lazy<{h.Class}>" : h.Class)} {h.Class.GetVariableName()}");
         var behaviorParams = requestBehaviors.SelectMany(r =>
         {
             var (request, applicableBehaviors) = r;
@@ -34,7 +37,7 @@ public static class CodeGenerator
                 $"{b.Class.ToString().DropGenerics()}<{request.Class}, {b.TResponse}> {b.Class.GetVariableName()}__{request.Class.GetVariableName()}");
         });
         constructorParams = constructorParams.Concat(behaviorParams)
-            .Concat(notifications.Select(n => $"IEnumerable<{(n.hasMediatorRefInCtor ? $"Lazy<INotificationHandler<{n.Class}>>" : $"INotificationHandler<{n.Class}>")}> {n.Class.GetVariableName()}__Handlers"));
+            .Concat(notifications.Select(n => $"IEnumerable<{(n.HasMediatorRefInCtor ? $"Lazy<INotificationHandler<{n.Class}>>" : $"INotificationHandler<{n.Class}>")}> {n.Class.GetVariableName()}__Handlers"));
 
         // Generate constructor initializers
         var constructorInitializers = handlers.Select(h =>
@@ -54,9 +57,21 @@ public static class CodeGenerator
             .OrderBy(r => r.Request.Class, new TypeHierarchyComparer(iRequestType, requestBehaviors.Select(r => r.Request.Class)))
             .Select(r =>
             {
-                var handler = handlers.FirstOrDefault(h => h.TRequest.Equals(r.Request.Class, SymbolEqualityComparer.Default));
-                if (handler == default) return null;
-                return $"case {r.Request.Class} {r.Request.Class.GetVariableName()}:\n                return ToResponse<Task<TResponse>>(\n                    Handle_{r.Request.Class.GetVariableName(false)}_WithBehaviors({r.Request.Class.GetVariableName()}, cancellationToken));";
+                var current = r.Request.Class;
+                do
+                {
+                    var handler = handlers.FirstOrDefault(h =>
+                        h.TRequest.Equals(current, SymbolEqualityComparer.Default));
+                    if (handler != default)
+                    {
+                        return $"case {r.Request.Class} {r.Request.Class.GetVariableName()}:\n                return ToResponse<Task<TResponse>>(\n                    Handle_{current.GetVariableName(false)}({r.Request.Class.GetVariableName()}, cancellationToken));";
+                    }
+                    current = current.BaseType;
+                } while (current != null &&
+                         current.AllInterfaces.Any(i =>
+                             SymbolEqualityComparer.Default.Equals(i.OriginalDefinition, iRequestType)));
+
+                return null;
             }).Where(c => c != null);
 
         // Generate behavior chain methods
@@ -65,9 +80,9 @@ public static class CodeGenerator
             var (request, applicableBehaviors) = r;
             var handler = handlers.FirstOrDefault(h => h.TRequest.Equals(request.Class, SymbolEqualityComparer.Default));
             if (handler == default) return null;
-            var chain = BehaviorChainBuilder.Build(applicableBehaviors, request.Class.GetVariableName(), $"_{handler.Class.GetVariableName()}{(handler.hasMediatorRefInCtor ? ".Value" : "")}.Handle");
+            var chain = BehaviorChainBuilder.Build(applicableBehaviors, request.Class.GetVariableName(), $"_{handler.Class.GetVariableName()}{(handler.HasMediatorRefInCtor ? ".Value" : "")}.Handle");
             return $$"""
-                     private Task<{{request.TResponse}}> Handle_{{request.Class.GetVariableName(false)}}_WithBehaviors(
+                     private Task<{{request.TResponse}}> Handle_{{request.Class.GetVariableName(false)}}(
                              {{request.Class}} request,
                              CancellationToken cancellationToken)
                          {
@@ -81,16 +96,32 @@ public static class CodeGenerator
         var publishCases = notifications
             .OrderBy(n => n.Class, new TypeHierarchyComparer(iRequestType, notifications.Select(n => n.Class)))
             .Select(n =>
-                $$"""
-                  case {{n.Class}} {{n.Class.GetVariableName()}}:
-                              {
-                                  foreach (var handler in _{{n.Class.GetVariableName()}}__Handlers)
-                                  {
-                                      await handler{{(n.hasMediatorRefInCtor ? ".Value" : "")}}.Handle({{n.Class.GetVariableName()}}, cancellationToken);
-                                  }
-                                  break;
-                              }
-                  """);
+            {
+                var current = n.Class;
+                do
+                {
+                    var handler = notificationHandlers.FirstOrDefault(h =>
+                        h.TNotification.Equals(current, SymbolEqualityComparer.Default));
+                    if (handler != default)
+                    {
+                        return $$"""
+                                 case {{n.Class}} {{n.Class.GetVariableName()}}:
+                                             {
+                                                 foreach (var handler in _{{current.GetVariableName()}}__Handlers)
+                                                 {
+                                                     await handler{{(handler.HasMediatorRefInCtor ? ".Value" : "")}}.Handle({{n.Class.GetVariableName()}}, cancellationToken);
+                                                 }
+                                                 break;
+                                             }
+                                 """;
+                    }
+                    current = current.BaseType;
+                } while (current != null &&
+                         current.AllInterfaces.Any(i =>
+                             SymbolEqualityComparer.Default.Equals(i.OriginalDefinition, iNotificationType)));
+
+                return null;
+            }).Where(c => c != null);
 
         // Generate the complete SwitchMediator class
         return Normalize(
