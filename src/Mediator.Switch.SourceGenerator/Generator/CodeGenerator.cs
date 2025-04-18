@@ -56,7 +56,7 @@ public static class CodeGenerator
             {
                 var handler = handlers.FirstOrDefault(h => h.TRequest.Equals(r.Request.Class, SymbolEqualityComparer.Default));
                 if (handler == default) return null;
-                return $"case {r.Request.Class} {r.Request.Class.GetVariableName()}:\n                return ToResponse<Task<TResponse>>(\n                    Handle{r.Request.Class.Name}WithBehaviors({r.Request.Class.GetVariableName()}, cancellationToken));";
+                return $"case {r.Request.Class} {r.Request.Class.GetVariableName()}:\n                return ToResponse<Task<TResponse>>(\n                    Handle_{r.Request.Class.GetVariableName(false)}_WithBehaviors({r.Request.Class.GetVariableName()}, cancellationToken));";
             }).Where(c => c != null);
 
         // Generate behavior chain methods
@@ -67,7 +67,7 @@ public static class CodeGenerator
             if (handler == default) return null;
             var chain = BehaviorChainBuilder.Build(applicableBehaviors, request.Class.GetVariableName(), $"_{handler.Class.GetVariableName()}{(handler.hasMediatorRefInCtor ? ".Value" : "")}.Handle");
             return $$"""
-                     private Task<{{request.TResponse}}> Handle{{request.Class.Name}}WithBehaviors(
+                     private Task<{{request.TResponse}}> Handle_{{request.Class.GetVariableName(false)}}_WithBehaviors(
                              {{request.Class}} request,
                              CancellationToken cancellationToken)
                          {
@@ -117,13 +117,21 @@ public static class CodeGenerator
 
               public class SwitchMediator : IMediator
               {
+                  #region Fields
+                  
                   {{string.Join("\n    ", handlerFields.Concat(behaviorFields).Concat(notificationHandlerFields))}}
+                  
+                  #endregion
               
+                  #region Constructor
+                  
                   public SwitchMediator(
                       {{string.Join(",\n        ", constructorParams)}})
                   {
                       {{string.Join("\n        ", constructorInitializers)}}
                   }
+                  
+                  #endregion
               
                   public Task<TResponse> Send<TResponse>(IRequest<TResponse> request, CancellationToken cancellationToken = default)
                   {
