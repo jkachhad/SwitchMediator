@@ -20,9 +20,15 @@ namespace Mediator.Switch;
 
 public class SwitchMediator : IMediator
 {
+    #region Fields
+
     private readonly Tests.BasicPipelineAdapted.PingHandler _tests_BasicPipelineAdapted_PingHandler;
     private readonly Tests.BasicPipelineAdapted.PongHandler _tests_BasicPipelineAdapted_PongHandler;
     private readonly Tests.BasicPipelineAdapted.GenericBehavior<Tests.BasicPipelineAdapted.Ping, Tests.BasicPipelineAdapted.VersionedResponse> _tests_BasicPipelineAdapted_GenericBehavior__tests_BasicPipelineAdapted_Ping;
+
+    #endregion
+
+    #region Constructor
 
     public SwitchMediator(
         Tests.BasicPipelineAdapted.PingHandler tests_BasicPipelineAdapted_PingHandler,
@@ -34,16 +40,18 @@ public class SwitchMediator : IMediator
         _tests_BasicPipelineAdapted_GenericBehavior__tests_BasicPipelineAdapted_Ping = tests_BasicPipelineAdapted_GenericBehavior__tests_BasicPipelineAdapted_Ping;
     }
 
+    #endregion
+
     public Task<TResponse> Send<TResponse>(IRequest<TResponse> request, CancellationToken cancellationToken = default)
     {
         switch (request)
         {
             case Tests.BasicPipelineAdapted.Ping tests_BasicPipelineAdapted_Ping:
                 return ToResponse<Task<TResponse>>(
-                    HandlePingWithBehaviors(tests_BasicPipelineAdapted_Ping, cancellationToken));
+                    Handle_Tests_BasicPipelineAdapted_Ping(tests_BasicPipelineAdapted_Ping, cancellationToken));
             case Tests.BasicPipelineAdapted.Pong tests_BasicPipelineAdapted_Pong:
                 return ToResponse<Task<TResponse>>(
-                    HandlePongWithBehaviors(tests_BasicPipelineAdapted_Pong, cancellationToken));
+                    Handle_Tests_BasicPipelineAdapted_Pong(tests_BasicPipelineAdapted_Pong, cancellationToken));
             default:
                 throw new ArgumentException($"No handler for {request.GetType().Name}");
         }
@@ -59,7 +67,7 @@ public class SwitchMediator : IMediator
         }
     }
 
-    private Task<Tests.BasicPipelineAdapted.Result<Tests.BasicPipelineAdapted.VersionedResponse>> HandlePingWithBehaviors(
+    private Task<Tests.BasicPipelineAdapted.Result<Tests.BasicPipelineAdapted.VersionedResponse>> Handle_Tests_BasicPipelineAdapted_Ping(
         Tests.BasicPipelineAdapted.Ping request,
         CancellationToken cancellationToken)
     {
@@ -69,7 +77,7 @@ public class SwitchMediator : IMediator
             cancellationToken);
     }
 
-    private Task<Tests.BasicPipelineAdapted.VersionedResponse> HandlePongWithBehaviors(
+    private Task<Tests.BasicPipelineAdapted.VersionedResponse> Handle_Tests_BasicPipelineAdapted_Pong(
         Tests.BasicPipelineAdapted.Pong request,
         CancellationToken cancellationToken)
     {

@@ -20,11 +20,17 @@ namespace Mediator.Switch;
 
 public class SwitchMediator : IMediator
 {
+    #region Fields
+
     private readonly Tests.ConstrainedPipeline.SpecialProcessRequestHandler _tests_ConstrainedPipeline_SpecialProcessRequestHandler;
     private readonly Tests.ConstrainedPipeline.NormalRequestHandler _tests_ConstrainedPipeline_NormalRequestHandler;
     private readonly Tests.ConstrainedPipeline.GenericLoggingBehavior<Tests.ConstrainedPipeline.SpecialProcessRequest, System.Guid> _tests_ConstrainedPipeline_GenericLoggingBehavior__tests_ConstrainedPipeline_SpecialProcessRequest;
     private readonly Tests.ConstrainedPipeline.SpecialProcessingBehavior<Tests.ConstrainedPipeline.SpecialProcessRequest, System.Guid> _tests_ConstrainedPipeline_SpecialProcessingBehavior__tests_ConstrainedPipeline_SpecialProcessRequest;
     private readonly Tests.ConstrainedPipeline.GenericLoggingBehavior<Tests.ConstrainedPipeline.NormalRequest, int> _tests_ConstrainedPipeline_GenericLoggingBehavior__tests_ConstrainedPipeline_NormalRequest;
+
+    #endregion
+
+    #region Constructor
 
     public SwitchMediator(
         Tests.ConstrainedPipeline.SpecialProcessRequestHandler tests_ConstrainedPipeline_SpecialProcessRequestHandler,
@@ -40,16 +46,18 @@ public class SwitchMediator : IMediator
         _tests_ConstrainedPipeline_GenericLoggingBehavior__tests_ConstrainedPipeline_NormalRequest = tests_ConstrainedPipeline_GenericLoggingBehavior__tests_ConstrainedPipeline_NormalRequest;
     }
 
+    #endregion
+
     public Task<TResponse> Send<TResponse>(IRequest<TResponse> request, CancellationToken cancellationToken = default)
     {
         switch (request)
         {
             case Tests.ConstrainedPipeline.NormalRequest tests_ConstrainedPipeline_NormalRequest:
                 return ToResponse<Task<TResponse>>(
-                    HandleNormalRequestWithBehaviors(tests_ConstrainedPipeline_NormalRequest, cancellationToken));
+                    Handle_Tests_ConstrainedPipeline_NormalRequest(tests_ConstrainedPipeline_NormalRequest, cancellationToken));
             case Tests.ConstrainedPipeline.SpecialProcessRequest tests_ConstrainedPipeline_SpecialProcessRequest:
                 return ToResponse<Task<TResponse>>(
-                    HandleSpecialProcessRequestWithBehaviors(tests_ConstrainedPipeline_SpecialProcessRequest, cancellationToken));
+                    Handle_Tests_ConstrainedPipeline_SpecialProcessRequest(tests_ConstrainedPipeline_SpecialProcessRequest, cancellationToken));
             default:
                 throw new ArgumentException($"No handler for {request.GetType().Name}");
         }
@@ -65,7 +73,7 @@ public class SwitchMediator : IMediator
         }
     }
 
-    private Task<System.Guid> HandleSpecialProcessRequestWithBehaviors(
+    private Task<System.Guid> Handle_Tests_ConstrainedPipeline_SpecialProcessRequest(
         Tests.ConstrainedPipeline.SpecialProcessRequest request,
         CancellationToken cancellationToken)
     {
@@ -77,7 +85,7 @@ public class SwitchMediator : IMediator
             cancellationToken);
     }
 
-    private Task<int> HandleNormalRequestWithBehaviors(
+    private Task<int> Handle_Tests_ConstrainedPipeline_NormalRequest(
         Tests.ConstrainedPipeline.NormalRequest request,
         CancellationToken cancellationToken)
     {

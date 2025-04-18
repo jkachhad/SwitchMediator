@@ -20,8 +20,14 @@ namespace Mediator.Switch;
 
 public class SwitchMediator : IMediator
 {
+    #region Fields
+
     private readonly Tests.Notifications.SimpleRequestHandler _tests_Notifications_SimpleRequestHandler;
     private readonly IEnumerable<INotificationHandler<Tests.Notifications.OrderCreatedEvent>> _tests_Notifications_OrderCreatedEvent__Handlers;
+
+    #endregion
+
+    #region Constructor
 
     public SwitchMediator(
         Tests.Notifications.SimpleRequestHandler tests_Notifications_SimpleRequestHandler,
@@ -31,13 +37,15 @@ public class SwitchMediator : IMediator
         _tests_Notifications_OrderCreatedEvent__Handlers = tests_Notifications_OrderCreatedEvent__Handlers;
     }
 
+    #endregion
+
     public Task<TResponse> Send<TResponse>(IRequest<TResponse> request, CancellationToken cancellationToken = default)
     {
         switch (request)
         {
             case Tests.Notifications.SimpleRequest tests_Notifications_SimpleRequest:
                 return ToResponse<Task<TResponse>>(
-                    HandleSimpleRequestWithBehaviors(tests_Notifications_SimpleRequest, cancellationToken));
+                    Handle_Tests_Notifications_SimpleRequest(tests_Notifications_SimpleRequest, cancellationToken));
             default:
                 throw new ArgumentException($"No handler for {request.GetType().Name}");
         }
@@ -60,7 +68,7 @@ public class SwitchMediator : IMediator
         }
     }
 
-    private Task<bool> HandleSimpleRequestWithBehaviors(
+    private Task<bool> Handle_Tests_Notifications_SimpleRequest(
         Tests.Notifications.SimpleRequest request,
         CancellationToken cancellationToken)
     {

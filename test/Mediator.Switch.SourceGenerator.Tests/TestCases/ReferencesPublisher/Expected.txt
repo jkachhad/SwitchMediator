@@ -20,7 +20,13 @@ namespace Mediator.Switch;
 
 public class SwitchMediator : IMediator
 {
+    #region Fields
+
     private readonly Lazy<Tests.ReferencesPublisher.PingHandler> _tests_ReferencesPublisher_PingHandler;
+
+    #endregion
+
+    #region Constructor
 
     public SwitchMediator(
         Lazy<Tests.ReferencesPublisher.PingHandler> tests_ReferencesPublisher_PingHandler)
@@ -28,13 +34,15 @@ public class SwitchMediator : IMediator
         _tests_ReferencesPublisher_PingHandler = tests_ReferencesPublisher_PingHandler;
     }
 
+    #endregion
+
     public Task<TResponse> Send<TResponse>(IRequest<TResponse> request, CancellationToken cancellationToken = default)
     {
         switch (request)
         {
             case Tests.ReferencesPublisher.Ping tests_ReferencesPublisher_Ping:
                 return ToResponse<Task<TResponse>>(
-                    HandlePingWithBehaviors(tests_ReferencesPublisher_Ping, cancellationToken));
+                    Handle_Tests_ReferencesPublisher_Ping(tests_ReferencesPublisher_Ping, cancellationToken));
             default:
                 throw new ArgumentException($"No handler for {request.GetType().Name}");
         }
@@ -50,7 +58,7 @@ public class SwitchMediator : IMediator
         }
     }
 
-    private Task<string> HandlePingWithBehaviors(
+    private Task<string> Handle_Tests_ReferencesPublisher_Ping(
         Tests.ReferencesPublisher.Ping request,
         CancellationToken cancellationToken)
     {

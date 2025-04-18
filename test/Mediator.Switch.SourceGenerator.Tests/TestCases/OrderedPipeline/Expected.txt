@@ -20,10 +20,16 @@ namespace Mediator.Switch;
 
 public class SwitchMediator : IMediator
 {
+    #region Fields
+
     private readonly Tests.OrderedPipeline.CalculationRequestHandler _tests_OrderedPipeline_CalculationRequestHandler;
     private readonly Tests.OrderedPipeline.MonitoringBehavior<Tests.OrderedPipeline.CalculationRequest, int> _tests_OrderedPipeline_MonitoringBehavior__tests_OrderedPipeline_CalculationRequest;
     private readonly Tests.OrderedPipeline.ValidationBehavior<Tests.OrderedPipeline.CalculationRequest, int> _tests_OrderedPipeline_ValidationBehavior__tests_OrderedPipeline_CalculationRequest;
     private readonly Tests.OrderedPipeline.LoggingBehavior<Tests.OrderedPipeline.CalculationRequest, int> _tests_OrderedPipeline_LoggingBehavior__tests_OrderedPipeline_CalculationRequest;
+
+    #endregion
+
+    #region Constructor
 
     public SwitchMediator(
         Tests.OrderedPipeline.CalculationRequestHandler tests_OrderedPipeline_CalculationRequestHandler,
@@ -37,13 +43,15 @@ public class SwitchMediator : IMediator
         _tests_OrderedPipeline_LoggingBehavior__tests_OrderedPipeline_CalculationRequest = tests_OrderedPipeline_LoggingBehavior__tests_OrderedPipeline_CalculationRequest;
     }
 
+    #endregion
+
     public Task<TResponse> Send<TResponse>(IRequest<TResponse> request, CancellationToken cancellationToken = default)
     {
         switch (request)
         {
             case Tests.OrderedPipeline.CalculationRequest tests_OrderedPipeline_CalculationRequest:
                 return ToResponse<Task<TResponse>>(
-                    HandleCalculationRequestWithBehaviors(tests_OrderedPipeline_CalculationRequest, cancellationToken));
+                    Handle_Tests_OrderedPipeline_CalculationRequest(tests_OrderedPipeline_CalculationRequest, cancellationToken));
             default:
                 throw new ArgumentException($"No handler for {request.GetType().Name}");
         }
@@ -59,7 +67,7 @@ public class SwitchMediator : IMediator
         }
     }
 
-    private Task<int> HandleCalculationRequestWithBehaviors(
+    private Task<int> Handle_Tests_OrderedPipeline_CalculationRequest(
         Tests.OrderedPipeline.CalculationRequest request,
         CancellationToken cancellationToken)
     {

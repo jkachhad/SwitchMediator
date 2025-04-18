@@ -20,8 +20,14 @@ namespace Mediator.Switch;
 
 public class SwitchMediator : IMediator
 {
+    #region Fields
+
     private readonly Tests.BasicPipeline.PingHandler _tests_BasicPipeline_PingHandler;
     private readonly Tests.BasicPipeline.GenericBehavior<Tests.BasicPipeline.Ping, string> _tests_BasicPipeline_GenericBehavior__tests_BasicPipeline_Ping;
+
+    #endregion
+
+    #region Constructor
 
     public SwitchMediator(
         Tests.BasicPipeline.PingHandler tests_BasicPipeline_PingHandler,
@@ -31,13 +37,15 @@ public class SwitchMediator : IMediator
         _tests_BasicPipeline_GenericBehavior__tests_BasicPipeline_Ping = tests_BasicPipeline_GenericBehavior__tests_BasicPipeline_Ping;
     }
 
+    #endregion
+
     public Task<TResponse> Send<TResponse>(IRequest<TResponse> request, CancellationToken cancellationToken = default)
     {
         switch (request)
         {
             case Tests.BasicPipeline.Ping tests_BasicPipeline_Ping:
                 return ToResponse<Task<TResponse>>(
-                    HandlePingWithBehaviors(tests_BasicPipeline_Ping, cancellationToken));
+                    Handle_Tests_BasicPipeline_Ping(tests_BasicPipeline_Ping, cancellationToken));
             default:
                 throw new ArgumentException($"No handler for {request.GetType().Name}");
         }
@@ -53,7 +61,7 @@ public class SwitchMediator : IMediator
         }
     }
 
-    private Task<string> HandlePingWithBehaviors(
+    private Task<string> Handle_Tests_BasicPipeline_Ping(
         Tests.BasicPipeline.Ping request,
         CancellationToken cancellationToken)
     {

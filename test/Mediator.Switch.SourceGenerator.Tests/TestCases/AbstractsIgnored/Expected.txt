@@ -20,13 +20,21 @@ namespace Mediator.Switch;
 
 public class SwitchMediator : IMediator
 {
+    #region Fields
 
+
+
+    #endregion
+
+    #region Constructor
 
     public SwitchMediator(
         )
     {
 
     }
+
+    #endregion
 
     public Task<TResponse> Send<TResponse>(IRequest<TResponse> request, CancellationToken cancellationToken = default)
     {

@@ -20,6 +20,8 @@ namespace Mediator.Switch;
 
 public class SwitchMediator : IMediator
 {
+    #region Fields
+
     private readonly Tests.FullPipeline.GetUserRequestHandler _tests_FullPipeline_GetUserRequestHandler;
     private readonly Tests.FullPipeline.CreateOrderRequestHandler _tests_FullPipeline_CreateOrderRequestHandler;
     private readonly Tests.FullPipeline.AuditBehavior<Tests.FullPipeline.GetUserRequest, string> _tests_FullPipeline_AuditBehavior__tests_FullPipeline_GetUserRequest;
@@ -29,6 +31,10 @@ public class SwitchMediator : IMediator
     private readonly Tests.FullPipeline.ValidationBehavior<Tests.FullPipeline.CreateOrderRequest, int> _tests_FullPipeline_ValidationBehavior__tests_FullPipeline_CreateOrderRequest;
     private readonly Tests.FullPipeline.LoggingBehavior<Tests.FullPipeline.CreateOrderRequest, int> _tests_FullPipeline_LoggingBehavior__tests_FullPipeline_CreateOrderRequest;
     private readonly IEnumerable<INotificationHandler<Tests.FullPipeline.UserLoggedInEvent>> _tests_FullPipeline_UserLoggedInEvent__Handlers;
+
+    #endregion
+
+    #region Constructor
 
     public SwitchMediator(
         Tests.FullPipeline.GetUserRequestHandler tests_FullPipeline_GetUserRequestHandler,
@@ -52,16 +58,18 @@ public class SwitchMediator : IMediator
         _tests_FullPipeline_UserLoggedInEvent__Handlers = tests_FullPipeline_UserLoggedInEvent__Handlers;
     }
 
+    #endregion
+
     public Task<TResponse> Send<TResponse>(IRequest<TResponse> request, CancellationToken cancellationToken = default)
     {
         switch (request)
         {
             case Tests.FullPipeline.CreateOrderRequest tests_FullPipeline_CreateOrderRequest:
                 return ToResponse<Task<TResponse>>(
-                    HandleCreateOrderRequestWithBehaviors(tests_FullPipeline_CreateOrderRequest, cancellationToken));
+                    Handle_Tests_FullPipeline_CreateOrderRequest(tests_FullPipeline_CreateOrderRequest, cancellationToken));
             case Tests.FullPipeline.GetUserRequest tests_FullPipeline_GetUserRequest:
                 return ToResponse<Task<TResponse>>(
-                    HandleGetUserRequestWithBehaviors(tests_FullPipeline_GetUserRequest, cancellationToken));
+                    Handle_Tests_FullPipeline_GetUserRequest(tests_FullPipeline_GetUserRequest, cancellationToken));
             default:
                 throw new ArgumentException($"No handler for {request.GetType().Name}");
         }
@@ -84,7 +92,7 @@ public class SwitchMediator : IMediator
         }
     }
 
-    private Task<string> HandleGetUserRequestWithBehaviors(
+    private Task<string> Handle_Tests_FullPipeline_GetUserRequest(
         Tests.FullPipeline.GetUserRequest request,
         CancellationToken cancellationToken)
     {
@@ -98,7 +106,7 @@ public class SwitchMediator : IMediator
             cancellationToken);
     }
 
-    private Task<int> HandleCreateOrderRequestWithBehaviors(
+    private Task<int> Handle_Tests_FullPipeline_CreateOrderRequest(
         Tests.FullPipeline.CreateOrderRequest request,
         CancellationToken cancellationToken)
     {
