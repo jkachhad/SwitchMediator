@@ -2,7 +2,6 @@ using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Reflection;
 using System.Runtime.CompilerServices;
-using Mediator.Switch.SourceGenerator;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Testing;
@@ -19,10 +18,8 @@ public class SwitchMediatorBaselineUpdateTests
     private static readonly ReferenceAssemblies _referenceAssemblies = TestDefinitions.ReferenceAssemblies;
     private static readonly Assembly _mediatorAssembly = TestDefinitions.MediatorAssembly;
 
-    public SwitchMediatorBaselineUpdateTests(ITestOutputHelper output)
-    {
+    public SwitchMediatorBaselineUpdateTests(ITestOutputHelper output) => 
         _output = output;
-    }
 
     [TheoryRunnableInDebugOnly]
     [InlineData("Basic")]

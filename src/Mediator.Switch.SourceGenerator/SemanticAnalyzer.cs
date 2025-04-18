@@ -20,6 +20,8 @@ public class SemanticAnalyzer
     private readonly INamedTypeSymbol _responseAdaptorAttributeSymbol;
     private readonly INamedTypeSymbol _orderAttributeSymbol;
     private readonly INamedTypeSymbol _requestHandlerAttributeSymbol;
+    
+    public INamedTypeSymbol IRequestSymbol => _iRequestSymbol;
 
     public SemanticAnalyzer(Compilation compilation)
     {

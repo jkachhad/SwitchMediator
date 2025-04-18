@@ -3,7 +3,7 @@ using Xunit;
 
 namespace Mediator.Switch.SourceGenerator.Tests;
 
-public class TheoryRunnableInDebugOnlyAttribute : TheoryAttribute
+public sealed class TheoryRunnableInDebugOnlyAttribute : TheoryAttribute
 {
     public TheoryRunnableInDebugOnlyAttribute()
     {

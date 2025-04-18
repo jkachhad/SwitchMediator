@@ -1,5 +1,4 @@
-﻿using Mediator.Switch.SourceGenerator;
-using Microsoft.CodeAnalysis.CSharp.Testing;
+﻿using Microsoft.CodeAnalysis.CSharp.Testing;
 using Microsoft.CodeAnalysis.Testing;
 using Xunit;
 
