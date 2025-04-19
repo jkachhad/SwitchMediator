@@ -64,9 +64,8 @@ public static class CodeGenerator
                         h.TRequest.Equals(current, SymbolEqualityComparer.Default));
                     if (handler != default)
                     {
-                        //return $"case {r.Request.Class} {r.Request.Class.GetVariableName()}:\n                return ToResponse<Task<TResponse>>(\n                    Handle_{current.GetVariableName(false)}({r.Request.Class.GetVariableName()}, cancellationToken));";
                         return $$"""
-                                             { // case
+                                             { // case {{r.Request.Class}}:
                                                  typeof({{r.Request.Class}}), (instance, request, cancellationToken) =>
                                                      instance.Handle_{{current.GetVariableName(false)}}(
                                                          ({{r.Request.Class}}) request, cancellationToken)
@@ -112,13 +111,14 @@ public static class CodeGenerator
                     if (handler != default)
                     {
                         return $$"""
-                                 case {{n.Class}} {{n.Class.GetVariableName()}}:
-                                             {
-                                                 foreach (var handler in _{{current.GetVariableName()}}__Handlers)
+                                             { // case {{n.Class}}:
+                                                 typeof({{n.Class}}), async (instance, notification, cancellationToken) =>
                                                  {
-                                                     await handler{{(handler.HasMediatorRefInCtor ? ".Value" : "")}}.Handle({{n.Class.GetVariableName()}}, cancellationToken);
+                                                     foreach (var handler in instance._{{current.GetVariableName()}}__Handlers)
+                                                     {
+                                                         await handler{{(handler.HasMediatorRefInCtor ? ".Value" : "")}}.Handle(({{n.Class}})notification, cancellationToken);
+                                                     }
                                                  }
-                                                 break;
                                              }
                                  """;
                     }
@@ -189,14 +189,22 @@ public static class CodeGenerator
                       };
                   }
               
-                  public async Task Publish(INotification notification, CancellationToken cancellationToken = default)
+                  public Task Publish(INotification notification, CancellationToken cancellationToken = default)
                   {
-                      switch (notification)
+                      if (PublishSwitchCase.Cases.TryGetValue(notification.GetType(), out var handle))
                       {
-                          {{string.Join("\n            ", publishCases)}}
-                          default:
-                              throw new ArgumentException($"No handlers for {notification.GetType().Name}");
+                          return handle(this, notification, cancellationToken);
                       }
+                      
+                      throw new ArgumentException($"No handler for {notification.GetType().Name}");
+                  }
+                  
+                  private static class PublishSwitchCase
+                  {
+                      public static readonly Dictionary<Type, Func<SwitchMediator, INotification, CancellationToken, Task>> Cases = new Dictionary<Type, Func<SwitchMediator, INotification, CancellationToken, Task>>
+                      {
+              {{string.Join(",\n", publishCases)}}
+                      };
                   }
               
                   {{string.Join("\n\n    ", behaviorMethods)}}
