@@ -50,27 +50,47 @@ public class SwitchMediator : IMediator
 
     public Task<TResponse> Send<TResponse>(IRequest<TResponse> request, CancellationToken cancellationToken = default)
     {
-        switch (request)
+        if (SendSwitchCase.Cases.TryGetValue(request.GetType(), out var handle))
         {
-            case Tests.ConstrainedPipeline.NormalRequest tests_ConstrainedPipeline_NormalRequest:
-                return ToResponse<Task<TResponse>>(
-                    Handle_Tests_ConstrainedPipeline_NormalRequest(tests_ConstrainedPipeline_NormalRequest, cancellationToken));
-            case Tests.ConstrainedPipeline.SpecialProcessRequest tests_ConstrainedPipeline_SpecialProcessRequest:
-                return ToResponse<Task<TResponse>>(
-                    Handle_Tests_ConstrainedPipeline_SpecialProcessRequest(tests_ConstrainedPipeline_SpecialProcessRequest, cancellationToken));
-            default:
-                throw new ArgumentException($"No handler for {request.GetType().Name}");
+            return (Task<TResponse>)handle(this, request, cancellationToken);
         }
+
+        throw new ArgumentException($"No handler for {request.GetType().Name}");
     }
 
-    public async Task Publish(INotification notification, CancellationToken cancellationToken = default)
+    private static class SendSwitchCase
     {
-        switch (notification)
+        public static readonly Dictionary<Type, Func<SwitchMediator, object, CancellationToken, object>> Cases = new Dictionary<Type, Func<SwitchMediator, object, CancellationToken, object>>
+        {
+            { // case Tests.ConstrainedPipeline.NormalRequest:
+                typeof(Tests.ConstrainedPipeline.NormalRequest), (instance, request, cancellationToken) =>
+                    instance.Handle_Tests_ConstrainedPipeline_NormalRequest(
+                        (Tests.ConstrainedPipeline.NormalRequest) request, cancellationToken)
+            },
+            { // case Tests.ConstrainedPipeline.SpecialProcessRequest:
+                typeof(Tests.ConstrainedPipeline.SpecialProcessRequest), (instance, request, cancellationToken) =>
+                    instance.Handle_Tests_ConstrainedPipeline_SpecialProcessRequest(
+                        (Tests.ConstrainedPipeline.SpecialProcessRequest) request, cancellationToken)
+            }
+        };
+    }
+
+    public Task Publish(INotification notification, CancellationToken cancellationToken = default)
+    {
+        if (PublishSwitchCase.Cases.TryGetValue(notification.GetType(), out var handle))
+        {
+            return handle(this, notification, cancellationToken);
+        }
+
+        throw new ArgumentException($"No handler for {notification.GetType().Name}");
+    }
+
+    private static class PublishSwitchCase
+    {
+        public static readonly Dictionary<Type, Func<SwitchMediator, INotification, CancellationToken, Task>> Cases = new Dictionary<Type, Func<SwitchMediator, INotification, CancellationToken, Task>>
         {
 
-            default:
-                throw new ArgumentException($"No handlers for {notification.GetType().Name}");
-        }
+        };
     }
 
     private Task<System.Guid> Handle_Tests_ConstrainedPipeline_SpecialProcessRequest(

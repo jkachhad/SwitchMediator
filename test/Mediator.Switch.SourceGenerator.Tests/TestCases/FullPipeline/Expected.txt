@@ -62,34 +62,55 @@ public class SwitchMediator : IMediator
 
     public Task<TResponse> Send<TResponse>(IRequest<TResponse> request, CancellationToken cancellationToken = default)
     {
-        switch (request)
+        if (SendSwitchCase.Cases.TryGetValue(request.GetType(), out var handle))
         {
-            case Tests.FullPipeline.CreateOrderRequest tests_FullPipeline_CreateOrderRequest:
-                return ToResponse<Task<TResponse>>(
-                    Handle_Tests_FullPipeline_CreateOrderRequest(tests_FullPipeline_CreateOrderRequest, cancellationToken));
-            case Tests.FullPipeline.GetUserRequest tests_FullPipeline_GetUserRequest:
-                return ToResponse<Task<TResponse>>(
-                    Handle_Tests_FullPipeline_GetUserRequest(tests_FullPipeline_GetUserRequest, cancellationToken));
-            default:
-                throw new ArgumentException($"No handler for {request.GetType().Name}");
+            return (Task<TResponse>)handle(this, request, cancellationToken);
         }
+
+        throw new ArgumentException($"No handler for {request.GetType().Name}");
     }
 
-    public async Task Publish(INotification notification, CancellationToken cancellationToken = default)
+    private static class SendSwitchCase
     {
-        switch (notification)
+        public static readonly Dictionary<Type, Func<SwitchMediator, object, CancellationToken, object>> Cases = new Dictionary<Type, Func<SwitchMediator, object, CancellationToken, object>>
         {
-            case Tests.FullPipeline.UserLoggedInEvent tests_FullPipeline_UserLoggedInEvent:
-            {
-                foreach (var handler in _tests_FullPipeline_UserLoggedInEvent__Handlers)
-                {
-                    await handler.Handle(tests_FullPipeline_UserLoggedInEvent, cancellationToken);
-                }
-                break;
+            { // case Tests.FullPipeline.CreateOrderRequest:
+                typeof(Tests.FullPipeline.CreateOrderRequest), (instance, request, cancellationToken) =>
+                    instance.Handle_Tests_FullPipeline_CreateOrderRequest(
+                        (Tests.FullPipeline.CreateOrderRequest) request, cancellationToken)
+            },
+            { // case Tests.FullPipeline.GetUserRequest:
+                typeof(Tests.FullPipeline.GetUserRequest), (instance, request, cancellationToken) =>
+                    instance.Handle_Tests_FullPipeline_GetUserRequest(
+                        (Tests.FullPipeline.GetUserRequest) request, cancellationToken)
             }
-            default:
-                throw new ArgumentException($"No handlers for {notification.GetType().Name}");
+        };
+    }
+
+    public Task Publish(INotification notification, CancellationToken cancellationToken = default)
+    {
+        if (PublishSwitchCase.Cases.TryGetValue(notification.GetType(), out var handle))
+        {
+            return handle(this, notification, cancellationToken);
         }
+
+        throw new ArgumentException($"No handler for {notification.GetType().Name}");
+    }
+
+    private static class PublishSwitchCase
+    {
+        public static readonly Dictionary<Type, Func<SwitchMediator, INotification, CancellationToken, Task>> Cases = new Dictionary<Type, Func<SwitchMediator, INotification, CancellationToken, Task>>
+        {
+            { // case Tests.FullPipeline.UserLoggedInEvent:
+                typeof(Tests.FullPipeline.UserLoggedInEvent), async (instance, notification, cancellationToken) =>
+                {
+                    foreach (var handler in instance._tests_FullPipeline_UserLoggedInEvent__Handlers)
+                    {
+                        await handler.Handle((Tests.FullPipeline.UserLoggedInEvent)notification, cancellationToken);
+                    }
+                }
+            }
+        };
     }
 
     private Task<string> Handle_Tests_FullPipeline_GetUserRequest(

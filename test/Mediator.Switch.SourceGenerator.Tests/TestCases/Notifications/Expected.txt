@@ -41,31 +41,50 @@ public class SwitchMediator : IMediator
 
     public Task<TResponse> Send<TResponse>(IRequest<TResponse> request, CancellationToken cancellationToken = default)
     {
-        switch (request)
+        if (SendSwitchCase.Cases.TryGetValue(request.GetType(), out var handle))
         {
-            case Tests.Notifications.SimpleRequest tests_Notifications_SimpleRequest:
-                return ToResponse<Task<TResponse>>(
-                    Handle_Tests_Notifications_SimpleRequest(tests_Notifications_SimpleRequest, cancellationToken));
-            default:
-                throw new ArgumentException($"No handler for {request.GetType().Name}");
+            return (Task<TResponse>)handle(this, request, cancellationToken);
         }
+
+        throw new ArgumentException($"No handler for {request.GetType().Name}");
     }
 
-    public async Task Publish(INotification notification, CancellationToken cancellationToken = default)
+    private static class SendSwitchCase
     {
-        switch (notification)
+        public static readonly Dictionary<Type, Func<SwitchMediator, object, CancellationToken, object>> Cases = new Dictionary<Type, Func<SwitchMediator, object, CancellationToken, object>>
         {
-            case Tests.Notifications.OrderCreatedEvent tests_Notifications_OrderCreatedEvent:
-            {
-                foreach (var handler in _tests_Notifications_OrderCreatedEvent__Handlers)
-                {
-                    await handler.Handle(tests_Notifications_OrderCreatedEvent, cancellationToken);
-                }
-                break;
+            { // case Tests.Notifications.SimpleRequest:
+                typeof(Tests.Notifications.SimpleRequest), (instance, request, cancellationToken) =>
+                    instance.Handle_Tests_Notifications_SimpleRequest(
+                        (Tests.Notifications.SimpleRequest) request, cancellationToken)
             }
-            default:
-                throw new ArgumentException($"No handlers for {notification.GetType().Name}");
+        };
+    }
+
+    public Task Publish(INotification notification, CancellationToken cancellationToken = default)
+    {
+        if (PublishSwitchCase.Cases.TryGetValue(notification.GetType(), out var handle))
+        {
+            return handle(this, notification, cancellationToken);
         }
+
+        throw new ArgumentException($"No handler for {notification.GetType().Name}");
+    }
+
+    private static class PublishSwitchCase
+    {
+        public static readonly Dictionary<Type, Func<SwitchMediator, INotification, CancellationToken, Task>> Cases = new Dictionary<Type, Func<SwitchMediator, INotification, CancellationToken, Task>>
+        {
+            { // case Tests.Notifications.OrderCreatedEvent:
+                typeof(Tests.Notifications.OrderCreatedEvent), async (instance, notification, cancellationToken) =>
+                {
+                    foreach (var handler in instance._tests_Notifications_OrderCreatedEvent__Handlers)
+                    {
+                        await handler.Handle((Tests.Notifications.OrderCreatedEvent)notification, cancellationToken);
+                    }
+                }
+            }
+        };
     }
 
     private Task<bool> Handle_Tests_Notifications_SimpleRequest(
