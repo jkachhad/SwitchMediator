@@ -15,7 +15,7 @@ public static class Program
             // Register SwitchMediator
             .AddMediator<SwitchMediator>(op =>
             {
-                op.TargetAssemblies = [typeof(Program).Assembly];
+                op.KnownTypes = SwitchMediator.KnownTypes;
                 op.ServiceLifetime = ServiceLifetime.Singleton;
                 op.OrderNotificationHandlers<UserLoggedInEvent>(
                     typeof(UserLoggedInLogger)

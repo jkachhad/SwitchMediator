@@ -9,8 +9,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
-using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -53,6 +51,11 @@ public class SwitchMediator : IMediator
     }
 
     #endregion
+
+    public static (IReadOnlyList<Type> RequestHandlerTypes, IReadOnlyList<Type> NotificationHandlerTypes, IReadOnlyList<Type> PipelineBehaviorTypes) KnownTypes
+    {
+        get { return (SwitchMediatorKnownTypes.RequestHandlerTypes, SwitchMediatorKnownTypes.NotificationHandlerTypes, SwitchMediatorKnownTypes.PipelineBehaviorTypes); }
+    }
 
     public Task<TResponse> Send<TResponse>(IRequest<TResponse> request, CancellationToken cancellationToken = default)
     {
@@ -176,10 +179,31 @@ public class SwitchMediator : IMediator
             /* Request Handler */ _tests_Polymorphics_CarRequestHandler.Handle(request, cancellationToken);
     }
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    [DebuggerStepThrough]
-    private T ToResponse<T>(object result)
+    /// <summary>
+    /// Provides lists of SwitchMediator component implementation types.
+    /// </summary>
+    public static class SwitchMediatorKnownTypes
     {
-        return (T) result;
+        public static readonly IReadOnlyList<Type> RequestHandlerTypes =
+            new Type[] {
+                typeof(Tests.Polymorphics.DogRequestHandler),
+                typeof(Tests.Polymorphics.CatRequestHandler),
+                typeof(Tests.Polymorphics.GenericAnimalRequestHandler),
+                typeof(Tests.Polymorphics.CarRequestHandler),
+                typeof(Tests.Polymorphics.VehicleRequestHandler)
+            }.AsReadOnly();
+
+        public static readonly IReadOnlyList<Type> NotificationHandlerTypes =
+           new Type[] {
+                typeof(Tests.Polymorphics.UserCreatedEmailHandler),
+                typeof(Tests.Polymorphics.OrderPlacedInventoryHandler),
+                typeof(Tests.Polymorphics.GenericDomainEventHandler),
+                typeof(Tests.Polymorphics.UserCreatedAnalyticsHandler)
+           }.AsReadOnly();
+
+        public static readonly IReadOnlyList<Type> PipelineBehaviorTypes =
+           new Type[] {
+
+           }.AsReadOnly();
     }
 }
