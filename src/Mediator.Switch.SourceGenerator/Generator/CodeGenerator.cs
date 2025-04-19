@@ -55,80 +55,19 @@ public static class CodeGenerator
         // Generate Send method switch cases
         var sendCases = requestBehaviors
             .OrderBy(r => r.Request.Class, new TypeHierarchyComparer(iRequestType, requestBehaviors.Select(r => r.Request.Class)))
-            .Select(r =>
-            {
-                var current = r.Request.Class;
-                do
-                {
-                    var handler = handlers.FirstOrDefault(h =>
-                        h.TRequest.Equals(current, SymbolEqualityComparer.Default));
-                    if (handler != default)
-                    {
-                        return $$"""
-                                             { // case {{r.Request.Class}}:
-                                                 typeof({{r.Request.Class}}), (instance, request, cancellationToken) =>
-                                                     instance.Handle_{{current.GetVariableName(false)}}(
-                                                         ({{r.Request.Class}}) request, cancellationToken)
-                                             }
-                                 """;
-                    }
-                    current = current.BaseType;
-                } while (current != null &&
-                         current.AllInterfaces.Any(i =>
-                             SymbolEqualityComparer.Default.Equals(i.OriginalDefinition, iRequestType)));
-
-                return null;
-            }).Where(c => c != null);
+            .Select(r => TryGenerateSendCase(iRequestType, handlers, r.Request))
+            .Where(c => c != null);
 
         // Generate behavior chain methods
-        var behaviorMethods = requestBehaviors.Select(r =>
-        {
-            var (request, applicableBehaviors) = r;
-            var handler = handlers.FirstOrDefault(h => h.TRequest.Equals(request.Class, SymbolEqualityComparer.Default));
-            if (handler == default) return null;
-            var chain = BehaviorChainBuilder.Build(applicableBehaviors, request.Class.GetVariableName(), $"_{handler.Class.GetVariableName()}{(handler.HasMediatorRefInCtor ? ".Value" : "")}.Handle");
-            return $$"""
-                     private Task<{{request.TResponse}}> Handle_{{request.Class.GetVariableName(false)}}(
-                             {{request.Class}} request,
-                             CancellationToken cancellationToken)
-                         {
-                             return
-                                 {{chain}};
-                         }
-                     """;
-        }).Where(m => m != null);
+        var behaviorMethods = requestBehaviors
+            .Select(r => TryGenerateBehaviorMethod(handlers, r))
+            .Where(m => m != null);
 
         // Generate Publish method switch cases
         var publishCases = notifications
             .OrderBy(n => n.Class, new TypeHierarchyComparer(iRequestType, notifications.Select(n => n.Class)))
-            .Select(n =>
-            {
-                var current = n.Class;
-                do
-                {
-                    var handler = notificationHandlers.FirstOrDefault(h =>
-                        h.TNotification.Equals(current, SymbolEqualityComparer.Default));
-                    if (handler != default)
-                    {
-                        return $$"""
-                                             { // case {{n.Class}}:
-                                                 typeof({{n.Class}}), async (instance, notification, cancellationToken) =>
-                                                 {
-                                                     foreach (var handler in instance._{{current.GetVariableName()}}__Handlers)
-                                                     {
-                                                         await handler{{(handler.HasMediatorRefInCtor ? ".Value" : "")}}.Handle(({{n.Class}})notification, cancellationToken);
-                                                     }
-                                                 }
-                                             }
-                                 """;
-                    }
-                    current = current.BaseType;
-                } while (current != null &&
-                         current.AllInterfaces.Any(i =>
-                             SymbolEqualityComparer.Default.Equals(i.OriginalDefinition, iNotificationType)));
-
-                return null;
-            }).Where(c => c != null);
+            .Select(n => TryGeneratePublishCase(iNotificationType, notificationHandlers, n))
+            .Where(c => c != null);
 
         // Generate the complete SwitchMediator class
         return Normalize(
@@ -217,6 +156,84 @@ public static class CodeGenerator
                   }
               }
               """);
+    }
+
+    private static string? TryGenerateSendCase(
+        ITypeSymbol iRequestType,
+        List<(ITypeSymbol Class, ITypeSymbol TRequest, ITypeSymbol TResponse, bool HasMediatorRefInCtor)> handlers,
+        (ITypeSymbol Class, ITypeSymbol TResponse) request)
+    {
+        var current = request.Class;
+        do
+        {
+            var handler = handlers.FirstOrDefault(h =>
+                h.TRequest.Equals(current, SymbolEqualityComparer.Default));
+            if (handler != default)
+            {
+                return $$"""
+                                     { // case {{request.Class}}:
+                                         typeof({{request.Class}}), (instance, request, cancellationToken) =>
+                                             instance.Handle_{{current.GetVariableName(false)}}(
+                                                 ({{request.Class}}) request, cancellationToken)
+                                     }
+                         """;
+            }
+            current = current.BaseType;
+        } while (current != null &&
+                 current.AllInterfaces.Any(i =>
+                     SymbolEqualityComparer.Default.Equals(i.OriginalDefinition, iRequestType)));
+
+        return null;
+    }
+
+    private static string? TryGeneratePublishCase(
+        ITypeSymbol iNotificationType, 
+        List<(ITypeSymbol Class, ITypeSymbol TNotification, bool HasMediatorRefInCtor)> notificationHandlers,
+        (ITypeSymbol Class, bool HasMediatorRefInCtor) notification)
+    {
+        var current = notification.Class;
+        do
+        {
+            var handler = notificationHandlers.FirstOrDefault(h =>
+                h.TNotification.Equals(current, SymbolEqualityComparer.Default));
+            if (handler != default)
+            {
+                return $$"""
+                                     { // case {{notification.Class}}:
+                                         typeof({{notification.Class}}), async (instance, notification, cancellationToken) =>
+                                         {
+                                             foreach (var handler in instance._{{current.GetVariableName()}}__Handlers)
+                                             {
+                                                 await handler{{(handler.HasMediatorRefInCtor ? ".Value" : "")}}.Handle(({{notification.Class}})notification, cancellationToken);
+                                             }
+                                         }
+                                     }
+                         """;
+            }
+            current = current.BaseType;
+        } while (current != null &&
+                 current.AllInterfaces.Any(i =>
+                     SymbolEqualityComparer.Default.Equals(i.OriginalDefinition, iNotificationType)));
+
+        return null;
+    }
+
+    private static string? TryGenerateBehaviorMethod(List<(ITypeSymbol Class, ITypeSymbol TRequest, ITypeSymbol TResponse, bool HasMediatorRefInCtor)> handlers,
+        ((ITypeSymbol Class, ITypeSymbol TResponse) Request, List<(ITypeSymbol Class, ITypeSymbol TRequest, ITypeSymbol TResponse, IReadOnlyList<ITypeParameterSymbol> TypeParameters)> Behaviors) r)
+    {
+        var (request, applicableBehaviors) = r;
+        var handler = handlers.FirstOrDefault(h => h.TRequest.Equals(request.Class, SymbolEqualityComparer.Default));
+        if (handler == default) return null;
+        var chain = BehaviorChainBuilder.Build(applicableBehaviors, request.Class.GetVariableName(), $"_{handler.Class.GetVariableName()}{(handler.HasMediatorRefInCtor ? ".Value" : "")}.Handle");
+        return $$"""
+                 private Task<{{request.TResponse}}> Handle_{{request.Class.GetVariableName(false)}}(
+                         {{request.Class}} request,
+                         CancellationToken cancellationToken)
+                     {
+                         return
+                             {{chain}};
+                     }
+                 """;
     }
 
     private static string Normalize(string code) =>
