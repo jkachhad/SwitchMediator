@@ -6,7 +6,7 @@
 
 **SwitchMediator: A Blazing Fast, Source-Generated Mediator for .NET**
 
-SwitchMediator provides a high-performance implementation of the mediator pattern, offering an API surface familiar to users of popular libraries like [MediatR](https://github.com/jbogard/MediatR). By leveraging **C# Source Generators**, SwitchMediator eliminates runtime reflection for handler discovery and dispatch, instead generating highly optimized `switch` statements at compile time. We also want you to <em>**Switch**</em> your <em>**Mediator**</em> to ours, get it? 😉
+SwitchMediator provides a high-performance implementation of the mediator pattern, offering an API surface familiar to users of popular libraries like [MediatR](https://github.com/jbogard/MediatR). By leveraging **C# Source Generators**, SwitchMediator eliminates runtime reflection for handler discovery and dispatch, instead generating highly optimized `switch` statements at compile time (this is done using a static readonly Dictionary that gets constructed at startup for O(1) execution regardless of the number of request / events you might have). We also want you to <em>**Switch**</em> your <em>**Mediator**</em> to ours, get it? 😉
 
 Aside from performance, SwitchMediator is first and foremost designed to overcome frequent community frustrations with MediatR, addressing factors that have hindered its wider adoption.
 
