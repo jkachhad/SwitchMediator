@@ -7,6 +7,30 @@ namespace Mediator.Switch.Extensions.Microsoft.DependencyInjection;
 
 public static class ServiceCollectionExtensions
 {
+    /// <summary>
+    /// Registers SwitchMediator services using pre-discovered types, avoiding runtime assembly scanning.
+    /// </summary>
+    /// <typeparam name="TSwitchMediator">The concrete implementation type of IMediator to register.</typeparam>
+    /// <param name="services">The service collection.</param>
+    /// <param name="serviceLifetime">The service lifetime for the mediator and its handlers/behaviors.</param>
+    /// <param name="knownTypes">A tuple containing pre-discovered lists of request handler, notification handler, and pipeline behavior types. Typically provided by a source generator.</param>
+    /// <returns>The service collection for chaining.</returns>
+    public static IServiceCollection AddMediator<TSwitchMediator>(this IServiceCollection services, ServiceLifetime serviceLifetime, (IReadOnlyList<Type> RequestHandlerTypes, IReadOnlyList<Type> NotificationHandlerTypes, IReadOnlyList<Type> PipelineBehaviorTypes) knownTypes)
+        where TSwitchMediator : class, IMediator =>
+        AddMediator<TSwitchMediator>(services, op =>
+        {
+            op.KnownTypes = knownTypes;
+            op.ServiceLifetime = serviceLifetime;
+        });
+
+    /// <summary>
+    /// Registers SwitchMediator services by scanning the specified assemblies for handlers and behaviors.
+    /// </summary>
+    /// <typeparam name="TSwitchMediator">The concrete implementation type of IMediator to register.</typeparam>
+    /// <param name="services">The service collection.</param>
+    /// <param name="serviceLifetime">The service lifetime for the mediator and its handlers/behaviors.</param>
+    /// <param name="assembliesToScan">The assemblies to scan for handlers and behaviors.</param>
+    /// <returns>The service collection for chaining.</returns>
     public static IServiceCollection AddMediator<TSwitchMediator>(this IServiceCollection services, ServiceLifetime serviceLifetime, params Assembly[] assembliesToScan)
         where TSwitchMediator : class, IMediator =>
         AddMediator<TSwitchMediator>(services, op =>
@@ -15,6 +39,15 @@ public static class ServiceCollectionExtensions
             op.ServiceLifetime = serviceLifetime;
         });
 
+    /// <summary>
+    /// Registers SwitchMediator services, allowing detailed configuration via the <paramref name="configure"/> action.
+    /// This is the primary configuration method, enabling specification of service lifetime, assemblies to scan,
+    /// or pre-discovered known types, and ordered notification handlers.
+    /// </summary>
+    /// <typeparam name="TSwitchMediator">The concrete implementation type of IMediator to register.</typeparam>
+    /// <param name="services">The service collection.</param>
+    /// <param name="configure">An optional action to configure SwitchMediator options, such as service lifetime, assemblies to scan, pre-discovered known types, or ordered notification handlers.</param>
+    /// <returns>The service collection for chaining.</returns>
     public static IServiceCollection AddMediator<TSwitchMediator>(this IServiceCollection services, Action<SwitchMediatorOptions>? configure)
         where TSwitchMediator : class, IMediator
     {
@@ -26,7 +59,35 @@ public static class ServiceCollectionExtensions
         services.Add(new ServiceDescriptor(typeof(ISender), sp => sp.GetRequiredService<IMediator>(), options.ServiceLifetime));
         services.Add(new ServiceDescriptor(typeof(IPublisher), sp => sp.GetRequiredService<IMediator>(), options.ServiceLifetime));
 
-        var allTypes = options.TargetAssemblies
+        if (options.KnownTypes != default)
+        {
+            RegisterRequestHandlers(services, options.KnownTypes.RequestHandlerTypes, options);
+            RegisterNotificationHandlers(services, options.KnownTypes.NotificationHandlerTypes, options);
+            RegisterPipelineBehaviors(services, options.KnownTypes.PipelineBehaviorTypes, options);
+        }
+
+        if (options.TargetAssemblies.Length > 0)
+        {
+            var allTypes = GetAllTypesFromAssemblies(options.TargetAssemblies);
+
+            RegisterRequestHandlers(services, allTypes.Where(t => t.GetInterfaces().Any(i =>
+                i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IRequestHandler<,>))), options);
+            
+            RegisterNotificationHandlers(services, allTypes
+                .Where(t => t.GetInterfaces().Any(i =>
+                    i.IsGenericType && i.GetGenericTypeDefinition() == typeof(INotificationHandler<>)))
+                .ToList(), options);
+            
+            RegisterPipelineBehaviors(services, allTypes.Where(t => t.GetInterfaces().Any(i =>
+                i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IPipelineBehavior<,>))), options);
+        }
+
+        return services;
+    }
+
+    private static List<Type> GetAllTypesFromAssemblies(Assembly[] assemblies)
+    {
+        var allTypes = assemblies
             .Where(assembly => assembly != null)
             .Distinct()
             .SelectMany(assembly =>
@@ -47,19 +108,12 @@ public static class ServiceCollectionExtensions
                                        i.GetGenericTypeDefinition() == typeof(INotificationHandler<>) ||
                                        i.GetGenericTypeDefinition() == typeof(IPipelineBehavior<,>))))
             .ToList();
-
-        RegisterRequestHandlers(services, allTypes, options);
-        RegisterNotificationHandlers(services, allTypes, options);
-        RegisterPipelineBehaviors(services, allTypes, options);
-
-        return services;
+        return allTypes;
     }
 
-    private static void RegisterRequestHandlers(IServiceCollection services, IEnumerable<Type> allTypes, SwitchMediatorOptions options)
+    private static void RegisterRequestHandlers(IServiceCollection services, IEnumerable<Type> requestHandlerTypes, SwitchMediatorOptions options)
     {
-        foreach (var handlerType in allTypes
-                     .Where(t => t.GetInterfaces().Any(i =>
-                         i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IRequestHandler<,>))))
+        foreach (var handlerType in requestHandlerTypes)
         {
             services.TryAdd(new ServiceDescriptor(handlerType, handlerType, options.ServiceLifetime));
             services.TryAdd(new ServiceDescriptor(typeof(Lazy<>).MakeGenericType(handlerType),
@@ -69,14 +123,9 @@ public static class ServiceCollectionExtensions
 
     private static void RegisterNotificationHandlers(
         IServiceCollection services,
-        IEnumerable<Type> allTypes,
+        IReadOnlyList<Type> notificationHandlerTypes,
         SwitchMediatorOptions options)
     {
-        var notificationHandlerTypes = allTypes
-            .Where(t => t.GetInterfaces().Any(i =>
-                i.IsGenericType && i.GetGenericTypeDefinition() == typeof(INotificationHandler<>)))
-            .ToList();
-
         // 1. Register individual concrete handlers
         foreach (var handlerType in notificationHandlerTypes)
         {
@@ -127,11 +176,9 @@ public static class ServiceCollectionExtensions
         }
     }
 
-    private static void RegisterPipelineBehaviors(IServiceCollection services, IEnumerable<Type> allTypes, SwitchMediatorOptions options)
+    private static void RegisterPipelineBehaviors(IServiceCollection services, IEnumerable<Type> behaviorTypes, SwitchMediatorOptions options)
     {
-        foreach (var behaviorType in allTypes
-                     .Where(t => t.GetInterfaces().Any(i =>
-                         i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IPipelineBehavior<,>))))
+        foreach (var behaviorType in behaviorTypes)
         {
             services.TryAdd(new ServiceDescriptor(behaviorType, behaviorType, options.ServiceLifetime));
         }
@@ -203,8 +250,8 @@ public static class ServiceCollectionExtensions
         // 9. Compile the expression tree into a delegate
         return outerLambda.Compile();
     }
-    
-    public static void Sort(Type[] typesToSort, Type[] specificOrder)
+
+    private static void Sort(Type[] typesToSort, Type[] specificOrder)
     {
         if (specificOrder.Length == 0)
         {

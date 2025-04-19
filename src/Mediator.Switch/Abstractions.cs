@@ -2,11 +2,24 @@ namespace Mediator.Switch;
 
 public interface ISender
 {
+    /// <summary>
+    /// Sends a request to a single handler and returns the response.
+    /// </summary>
+    /// <typeparam name="TResponse">The type of response expected from the request.</typeparam>
+    /// <param name="request">The request object.</param>
+    /// <param name="cancellationToken">An optional cancellation token.</param>
+    /// <returns>A task representing the asynchronous operation, containing the response.</returns>
     Task<TResponse> Send<TResponse>(IRequest<TResponse> request, CancellationToken cancellationToken = default);
 }
 
 public interface IPublisher
 {
+    /// <summary>
+    /// Publishes a notification to multiple handlers.
+    /// </summary>
+    /// <param name="notification">The notification object.</param>
+    /// <param name="cancellationToken">An optional cancellation token.</param>
+    /// <returns>A task representing the asynchronous operation.</returns>
     Task Publish(INotification notification, CancellationToken cancellationToken = default);
 }
 

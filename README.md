@@ -95,8 +95,8 @@ public static class Program
         // 1. Register SwitchMediator itself.
         services.AddMediator<SwitchMediator>(op =>
         {
-            // 2. Pass assembly(s) containing handlers, messages, behaviors for scanning and specify service lifetime.
-            op.TargetAssemblies = [typeof(Program).Assembly];
+            // 2. Pass compile-time pre-discovered types containing handlers, messages, behaviors for scanning and specify service lifetime.
+            op.KnownTypes = SwitchMediator.KnownTypes;
             op.ServiceLifetime = ServiceLifetime.Singleton;
             // 3. Optionally, specify notification handler order.
             op.OrderNotificationHandlers<UserLoggedInEvent>(

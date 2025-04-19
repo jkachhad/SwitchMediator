@@ -44,7 +44,8 @@ public class SemanticAnalyzer
     public (List<(ITypeSymbol Class, ITypeSymbol TRequest, ITypeSymbol TResponse, bool HasMediatorRefInCtor)> Handlers,
         List<((ITypeSymbol Class, ITypeSymbol TResponse) Request, List<(ITypeSymbol Class, ITypeSymbol TRequest, ITypeSymbol TResponse, IReadOnlyList<ITypeParameterSymbol> TypeParameters)> Behaviors)> RequestBehaviors,
         List<(ITypeSymbol Class, ITypeSymbol TNotification, bool HasMediatorRefInCtor)> NotificationHandlers,
-        List<(ITypeSymbol NotificationClass, bool HasMediatorRefInCtor)> Notifications)
+        List<(ITypeSymbol NotificationClass, bool HasMediatorRefInCtor)> Notifications,
+        List<(ITypeSymbol Class, ITypeSymbol TRequest, ITypeSymbol TResponse, IReadOnlyList<ITypeParameterSymbol> TypeParameters)> Behaviors)
         Analyze(List<TypeDeclarationSyntax> types, CancellationToken cancellationToken)
     {
         var requests = new List<(ITypeSymbol Class, ITypeSymbol TResponse)>();
@@ -64,7 +65,7 @@ public class SemanticAnalyzer
         var requestBehaviors = ProcessRequestBehaviors(requests, behaviors);
         var finalNotifications = DetermineNotificationHandlerDependencies(notifications, notificationHandlers);
 
-        return (handlers, requestBehaviors, notificationHandlers, finalNotifications);
+        return (handlers, requestBehaviors, notificationHandlers, finalNotifications, behaviors);
     }
 
     private void AnalyzeTypeSyntax(

@@ -26,7 +26,7 @@ public abstract class MediatorTestBase : IDisposable
         // Register SwitchMediator - Mirroring Program.cs setup
         services.AddMediator<SwitchMediator>(op =>
         {
-            op.TargetAssemblies = [typeof(MediatorTestBase).Assembly];
+            op.KnownTypes = SwitchMediator.KnownTypes;
             op.ServiceLifetime = ServiceLifetime.Scoped;
 
             op.OrderNotificationHandlers<UserLoggedInEvent>(

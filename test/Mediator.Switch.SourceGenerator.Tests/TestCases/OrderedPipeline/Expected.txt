@@ -9,8 +9,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
-using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -44,6 +42,11 @@ public class SwitchMediator : IMediator
     }
 
     #endregion
+
+    public static (IReadOnlyList<Type> RequestHandlerTypes, IReadOnlyList<Type> NotificationHandlerTypes, IReadOnlyList<Type> PipelineBehaviorTypes) KnownTypes
+    {
+        get { return (SwitchMediatorKnownTypes.RequestHandlerTypes, SwitchMediatorKnownTypes.NotificationHandlerTypes, SwitchMediatorKnownTypes.PipelineBehaviorTypes); }
+    }
 
     public Task<TResponse> Send<TResponse>(IRequest<TResponse> request, CancellationToken cancellationToken = default)
     {
@@ -99,10 +102,26 @@ public class SwitchMediator : IMediator
             cancellationToken);
     }
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    [DebuggerStepThrough]
-    private T ToResponse<T>(object result)
+    /// <summary>
+    /// Provides lists of SwitchMediator component implementation types.
+    /// </summary>
+    public static class SwitchMediatorKnownTypes
     {
-        return (T) result;
+        public static readonly IReadOnlyList<Type> RequestHandlerTypes =
+            new Type[] {
+                typeof(Tests.OrderedPipeline.CalculationRequestHandler)
+            }.AsReadOnly();
+
+        public static readonly IReadOnlyList<Type> NotificationHandlerTypes =
+           new Type[] {
+
+           }.AsReadOnly();
+
+        public static readonly IReadOnlyList<Type> PipelineBehaviorTypes =
+           new Type[] {
+                typeof(Tests.OrderedPipeline.ValidationBehavior<,>),
+                typeof(Tests.OrderedPipeline.LoggingBehavior<,>),
+                typeof(Tests.OrderedPipeline.MonitoringBehavior<,>)
+           }.AsReadOnly();
     }
 }

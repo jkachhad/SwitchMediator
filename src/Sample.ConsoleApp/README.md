@@ -134,7 +134,7 @@ This sample application demonstrates various technical capabilities of the **Swi
     // ... other registrations ...
     services.AddMediator<SwitchMediator>(op =>
     {
-        op.TargetAssemblies = [typeof(Program).Assembly];
+        op.KnownTypes = SwitchMediator.KnownTypes;
         op.ServiceLifetime = ServiceLifetime.Singleton;
         op.OrderNotificationHandlers<UserLoggedInEvent>(
             typeof(UserLoggedInLogger),
