@@ -20,8 +20,14 @@ namespace Mediator.Switch;
 
 public class SwitchMediator : IMediator
 {
+    #region Fields
+
     private readonly Tests.MultipleRequests.GetProductRequestHandler _tests_MultipleRequests_GetProductRequestHandler;
     private readonly Tests.MultipleRequests.GetInventoryRequestHandler _tests_MultipleRequests_GetInventoryRequestHandler;
+
+    #endregion
+
+    #region Constructor
 
     public SwitchMediator(
         Tests.MultipleRequests.GetProductRequestHandler tests_MultipleRequests_GetProductRequestHandler,
@@ -31,32 +37,54 @@ public class SwitchMediator : IMediator
         _tests_MultipleRequests_GetInventoryRequestHandler = tests_MultipleRequests_GetInventoryRequestHandler;
     }
 
+    #endregion
+
     public Task<TResponse> Send<TResponse>(IRequest<TResponse> request, CancellationToken cancellationToken = default)
     {
-        switch (request)
+        if (SendSwitchCase.Cases.TryGetValue(request.GetType(), out var handle))
         {
-            case Tests.MultipleRequests.GetInventoryRequest tests_MultipleRequests_GetInventoryRequest:
-                return ToResponse<Task<TResponse>>(
-                    HandleGetInventoryRequestWithBehaviors(tests_MultipleRequests_GetInventoryRequest, cancellationToken));
-            case Tests.MultipleRequests.GetProductRequest tests_MultipleRequests_GetProductRequest:
-                return ToResponse<Task<TResponse>>(
-                    HandleGetProductRequestWithBehaviors(tests_MultipleRequests_GetProductRequest, cancellationToken));
-            default:
-                throw new ArgumentException($"No handler for {request.GetType().Name}");
+            return (Task<TResponse>)handle(this, request, cancellationToken);
         }
+
+        throw new ArgumentException($"No handler for {request.GetType().Name}");
     }
 
-    public async Task Publish(INotification notification, CancellationToken cancellationToken = default)
+    private static class SendSwitchCase
     {
-        switch (notification)
+        public static readonly Dictionary<Type, Func<SwitchMediator, object, CancellationToken, object>> Cases = new Dictionary<Type, Func<SwitchMediator, object, CancellationToken, object>>
         {
-
-            default:
-                throw new ArgumentException($"No handlers for {notification.GetType().Name}");
-        }
+            { // case Tests.MultipleRequests.GetInventoryRequest:
+                typeof(Tests.MultipleRequests.GetInventoryRequest), (instance, request, cancellationToken) =>
+                    instance.Handle_Tests_MultipleRequests_GetInventoryRequest(
+                        (Tests.MultipleRequests.GetInventoryRequest) request, cancellationToken)
+            },
+            { // case Tests.MultipleRequests.GetProductRequest:
+                typeof(Tests.MultipleRequests.GetProductRequest), (instance, request, cancellationToken) =>
+                    instance.Handle_Tests_MultipleRequests_GetProductRequest(
+                        (Tests.MultipleRequests.GetProductRequest) request, cancellationToken)
+            }
+        };
     }
 
-    private Task<string> HandleGetProductRequestWithBehaviors(
+    public Task Publish(INotification notification, CancellationToken cancellationToken = default)
+    {
+        if (PublishSwitchCase.Cases.TryGetValue(notification.GetType(), out var handle))
+        {
+            return handle(this, notification, cancellationToken);
+        }
+
+        throw new ArgumentException($"No handler for {notification.GetType().Name}");
+    }
+
+    private static class PublishSwitchCase
+    {
+        public static readonly Dictionary<Type, Func<SwitchMediator, INotification, CancellationToken, Task>> Cases = new Dictionary<Type, Func<SwitchMediator, INotification, CancellationToken, Task>>
+        {
+
+        };
+    }
+
+    private Task<string> Handle_Tests_MultipleRequests_GetProductRequest(
         Tests.MultipleRequests.GetProductRequest request,
         CancellationToken cancellationToken)
     {
@@ -64,7 +92,7 @@ public class SwitchMediator : IMediator
             /* Request Handler */ _tests_MultipleRequests_GetProductRequestHandler.Handle(request, cancellationToken);
     }
 
-    private Task<int> HandleGetInventoryRequestWithBehaviors(
+    private Task<int> Handle_Tests_MultipleRequests_GetInventoryRequest(
         Tests.MultipleRequests.GetInventoryRequest request,
         CancellationToken cancellationToken)
     {

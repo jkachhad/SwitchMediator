@@ -3,7 +3,7 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Tests.PolymorphicRequests;
+namespace Tests.Polymorphics;
 
 // --- Polymorphic Requests ---
 
@@ -28,6 +28,7 @@ public class CatRequest : AnimalRequest
 // Another unrelated derived request (to ensure no accidental matching)
 public abstract class VehicleRequest : IRequest<double> { }
 public class CarRequest : VehicleRequest { public int Doors { get; set; } }
+public class TruckRequest : VehicleRequest; // no handler - should fall back to VehicleRequestHandler
 
 
 // Handlers
@@ -61,6 +62,11 @@ public class GenericAnimalRequestHandler : IRequestHandler<AnimalRequest, string
 public class CarRequestHandler : IRequestHandler<CarRequest, double>
 {
     public Task<double> Handle(CarRequest request, CancellationToken cancellationToken = default) => Task.FromResult(42.0);
+}
+
+public class VehicleRequestHandler : IRequestHandler<VehicleRequest, double>
+{
+    public Task<double> Handle(VehicleRequest request, CancellationToken cancellationToken = default) => Task.FromResult(24.0);
 }
 
 

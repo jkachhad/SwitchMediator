@@ -46,8 +46,18 @@ public static class Program
         var orderResult = await sender.Send(orderRequest);
         Console.WriteLine($"--> Result: {orderResult}\n");
 
+        Console.WriteLine("--- Sending Cat ---");
+        var catRequest = new Cat();
+        await sender.Send(catRequest);
+        Console.WriteLine("--> Done\n");
+
+        Console.WriteLine("--- Sending Dog ---");
+        var dogRequest = new Dog();
+        await sender.Send(dogRequest);
+        Console.WriteLine("--> Done\n");
+
         Console.WriteLine("--- Publishing UserLoggedInEvent ---");
-        var loginEvent = new UserLoggedInEvent(123);
+        var loginEvent = new DerivedUserLoggedInEvent(123);
         await publisher.Publish(loginEvent);
         Console.WriteLine("--- Notification Published ---\n");
 

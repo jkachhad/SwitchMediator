@@ -42,11 +42,13 @@ public record CatQuery(string Name) : AnimalQuery(Name);
 [RequestHandler(typeof(DogQueryHandler))]
 public record DogQuery(string Name, string Breed) : AnimalQuery(Name);
 
-// Notification type
+// Notification types
 public class UserLoggedInEvent(int userId) : INotification
 {
     public int UserId { get; } = userId;
 }
+
+public class DerivedUserLoggedInEvent(int userId) : UserLoggedInEvent(userId);
 
 // Response models
 public class User : IVersionedResponse

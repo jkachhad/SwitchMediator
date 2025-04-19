@@ -20,10 +20,16 @@ namespace Mediator.Switch;
 
 public class SwitchMediator : IMediator
 {
+    #region Fields
+
     private readonly Tests.OrderedPipeline.CalculationRequestHandler _tests_OrderedPipeline_CalculationRequestHandler;
     private readonly Tests.OrderedPipeline.MonitoringBehavior<Tests.OrderedPipeline.CalculationRequest, int> _tests_OrderedPipeline_MonitoringBehavior__tests_OrderedPipeline_CalculationRequest;
     private readonly Tests.OrderedPipeline.ValidationBehavior<Tests.OrderedPipeline.CalculationRequest, int> _tests_OrderedPipeline_ValidationBehavior__tests_OrderedPipeline_CalculationRequest;
     private readonly Tests.OrderedPipeline.LoggingBehavior<Tests.OrderedPipeline.CalculationRequest, int> _tests_OrderedPipeline_LoggingBehavior__tests_OrderedPipeline_CalculationRequest;
+
+    #endregion
+
+    #region Constructor
 
     public SwitchMediator(
         Tests.OrderedPipeline.CalculationRequestHandler tests_OrderedPipeline_CalculationRequestHandler,
@@ -37,29 +43,49 @@ public class SwitchMediator : IMediator
         _tests_OrderedPipeline_LoggingBehavior__tests_OrderedPipeline_CalculationRequest = tests_OrderedPipeline_LoggingBehavior__tests_OrderedPipeline_CalculationRequest;
     }
 
+    #endregion
+
     public Task<TResponse> Send<TResponse>(IRequest<TResponse> request, CancellationToken cancellationToken = default)
     {
-        switch (request)
+        if (SendSwitchCase.Cases.TryGetValue(request.GetType(), out var handle))
         {
-            case Tests.OrderedPipeline.CalculationRequest tests_OrderedPipeline_CalculationRequest:
-                return ToResponse<Task<TResponse>>(
-                    HandleCalculationRequestWithBehaviors(tests_OrderedPipeline_CalculationRequest, cancellationToken));
-            default:
-                throw new ArgumentException($"No handler for {request.GetType().Name}");
+            return (Task<TResponse>)handle(this, request, cancellationToken);
         }
+
+        throw new ArgumentException($"No handler for {request.GetType().Name}");
     }
 
-    public async Task Publish(INotification notification, CancellationToken cancellationToken = default)
+    private static class SendSwitchCase
     {
-        switch (notification)
+        public static readonly Dictionary<Type, Func<SwitchMediator, object, CancellationToken, object>> Cases = new Dictionary<Type, Func<SwitchMediator, object, CancellationToken, object>>
         {
-
-            default:
-                throw new ArgumentException($"No handlers for {notification.GetType().Name}");
-        }
+            { // case Tests.OrderedPipeline.CalculationRequest:
+                typeof(Tests.OrderedPipeline.CalculationRequest), (instance, request, cancellationToken) =>
+                    instance.Handle_Tests_OrderedPipeline_CalculationRequest(
+                        (Tests.OrderedPipeline.CalculationRequest) request, cancellationToken)
+            }
+        };
     }
 
-    private Task<int> HandleCalculationRequestWithBehaviors(
+    public Task Publish(INotification notification, CancellationToken cancellationToken = default)
+    {
+        if (PublishSwitchCase.Cases.TryGetValue(notification.GetType(), out var handle))
+        {
+            return handle(this, notification, cancellationToken);
+        }
+
+        throw new ArgumentException($"No handler for {notification.GetType().Name}");
+    }
+
+    private static class PublishSwitchCase
+    {
+        public static readonly Dictionary<Type, Func<SwitchMediator, INotification, CancellationToken, Task>> Cases = new Dictionary<Type, Func<SwitchMediator, INotification, CancellationToken, Task>>
+        {
+
+        };
+    }
+
+    private Task<int> Handle_Tests_OrderedPipeline_CalculationRequest(
         Tests.OrderedPipeline.CalculationRequest request,
         CancellationToken cancellationToken)
     {
