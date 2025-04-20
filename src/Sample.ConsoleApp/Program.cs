@@ -13,16 +13,18 @@ public static class Program
             .AddValidatorsFromAssembly(typeof(Program).Assembly)
             
             // Register SwitchMediator
-            .AddMediator<SwitchMediator>(op =>
+            .AddMediator<SwitchMediator2>(op =>
             {
-                op.KnownTypes = SwitchMediator.KnownTypes;
+                op.KnownTypes = SwitchMediator2.KnownTypes;
                 op.ServiceLifetime = ServiceLifetime.Singleton;
                 op.OrderNotificationHandlers<UserLoggedInEvent>(
                     typeof(UserLoggedInLogger)
                     // any other types not specified above is assumed to have lower priority
                     // e.g., typeof(UserLoggedInAnalytics)
                 );
-            });
+            })
+            
+            .AddScoped<ISwitchMediatorServiceProvider, MicrosoftDependencyInjectionServiceProvider>();
 
         var serviceProvider = services.BuildServiceProvider();
 
