@@ -42,9 +42,9 @@ public class SwitchMediator : IMediator
 
     #endregion
 
-    public static (IReadOnlyList<Type> RequestHandlerTypes, IReadOnlyList<Type> NotificationHandlerTypes, IReadOnlyList<Type> PipelineBehaviorTypes) KnownTypes
+    public static (IReadOnlyList<Type> RequestHandlerTypes, IReadOnlyList<(Type NotificationType, IReadOnlyList<Type> HandlerTypes)> NotificationTypes, IReadOnlyList<Type> PipelineBehaviorTypes) KnownTypes
     {
-        get { return (SwitchMediatorKnownTypes.RequestHandlerTypes, SwitchMediatorKnownTypes.NotificationHandlerTypes, SwitchMediatorKnownTypes.PipelineBehaviorTypes); }
+        get { return (SwitchMediatorKnownTypes.RequestHandlerTypes, SwitchMediatorKnownTypes.NotificationTypes, SwitchMediatorKnownTypes.PipelineBehaviorTypes); }
     }
 
     public Task<TResponse> Send<TResponse>(IRequest<TResponse> request, CancellationToken cancellationToken = default)
@@ -118,8 +118,8 @@ public class SwitchMediator : IMediator
                 typeof(Tests.OrderedPipeline.CalculationRequestHandler)
             }.AsReadOnly();
 
-        public static readonly IReadOnlyList<Type> NotificationHandlerTypes =
-           new Type[] {
+        public static readonly IReadOnlyList<(Type NotificationType, IReadOnlyList<Type> HandlerTypes)> NotificationTypes =
+           new (Type NotificationType, IReadOnlyList<Type> HandlerTypes)[] {
 
            }.AsReadOnly();
 

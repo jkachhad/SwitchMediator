@@ -1,4 +1,3 @@
-using System.Reflection;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 
@@ -14,27 +13,12 @@ public static class ServiceCollectionExtensions
     /// <param name="serviceLifetime">The service lifetime for the mediator and its handlers/behaviors.</param>
     /// <param name="knownTypes">A tuple containing pre-discovered lists of request handler, notification handler, and pipeline behavior types. Typically provided by a source generator.</param>
     /// <returns>The service collection for chaining.</returns>
-    public static IServiceCollection AddMediator<TSwitchMediator>(this IServiceCollection services, ServiceLifetime serviceLifetime, (IReadOnlyList<Type> RequestHandlerTypes, IReadOnlyList<Type> NotificationHandlerTypes, IReadOnlyList<Type> PipelineBehaviorTypes) knownTypes)
+    public static IServiceCollection AddMediator<TSwitchMediator>(this IServiceCollection services, ServiceLifetime serviceLifetime,
+        (IReadOnlyList<Type> RequestHandlerTypes, IReadOnlyList<(Type NotificationType, IReadOnlyList<Type> HandlerTypes)> NotificationHandlerTypes, IReadOnlyList<Type> PipelineBehaviorTypes) knownTypes)
         where TSwitchMediator : class, IMediator =>
         AddMediator<TSwitchMediator>(services, op =>
         {
             op.KnownTypes = knownTypes;
-            op.ServiceLifetime = serviceLifetime;
-        });
-
-    /// <summary>
-    /// Registers SwitchMediator services by scanning the specified assemblies for handlers and behaviors.
-    /// </summary>
-    /// <typeparam name="TSwitchMediator">The concrete implementation type of IMediator to register.</typeparam>
-    /// <param name="services">The service collection.</param>
-    /// <param name="serviceLifetime">The service lifetime for the mediator and its handlers/behaviors.</param>
-    /// <param name="assembliesToScan">The assemblies to scan for handlers and behaviors.</param>
-    /// <returns>The service collection for chaining.</returns>
-    public static IServiceCollection AddMediator<TSwitchMediator>(this IServiceCollection services, ServiceLifetime serviceLifetime, params Assembly[] assembliesToScan)
-        where TSwitchMediator : class, IMediator =>
-        AddMediator<TSwitchMediator>(services, op =>
-        {
-            op.TargetAssemblies = assembliesToScan;
             op.ServiceLifetime = serviceLifetime;
         });
 
@@ -63,55 +47,15 @@ public static class ServiceCollectionExtensions
         if (options.KnownTypes != default)
         {
             RegisterRequestHandlers(services, options.KnownTypes.RequestHandlerTypes, options);
-            RegisterNotificationHandlers(services, options.KnownTypes.NotificationHandlerTypes, options);
+            RegisterNotificationHandlers(services,
+                options.KnownTypes.NotificationTypes.Select(n => (n.NotificationType, n.HandlerTypes.ToArray())),
+                options);
             RegisterPipelineBehaviors(services, options.KnownTypes.PipelineBehaviorTypes, options);
-        }
-
-        if (options.TargetAssemblies.Length > 0)
-        {
-            var allTypes = GetAllTypesFromAssemblies(options.TargetAssemblies);
-
-            RegisterRequestHandlers(services, allTypes.Where(t => t.GetInterfaces().Any(i =>
-                i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IRequestHandler<,>))), options);
-            
-            RegisterNotificationHandlers(services, allTypes
-                .Where(t => t.GetInterfaces().Any(i =>
-                    i.IsGenericType && i.GetGenericTypeDefinition() == typeof(INotificationHandler<>)))
-                .ToList(), options);
-            
-            RegisterPipelineBehaviors(services, allTypes.Where(t => t.GetInterfaces().Any(i =>
-                i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IPipelineBehavior<,>))), options);
         }
 
         return services;
     }
-
-    private static List<Type> GetAllTypesFromAssemblies(Assembly[] assemblies)
-    {
-        var allTypes = assemblies
-            .Where(assembly => assembly != null)
-            .Distinct()
-            .SelectMany(assembly =>
-            {
-                try
-                {
-                    return assembly.GetTypes();
-                }
-                catch (ReflectionTypeLoadException)
-                {
-                    return [];
-                }
-            })
-            .Where(t => t is {IsClass: true, IsAbstract: false} &&
-                        t.GetInterfaces()
-                            .Any(i => i.IsGenericType &&
-                                      (i.GetGenericTypeDefinition() == typeof(IRequestHandler<,>) ||
-                                       i.GetGenericTypeDefinition() == typeof(INotificationHandler<>) ||
-                                       i.GetGenericTypeDefinition() == typeof(IPipelineBehavior<,>))))
-            .ToList();
-        return allTypes;
-    }
-
+    
     private static void RegisterRequestHandlers(IServiceCollection services, IEnumerable<Type> requestHandlerTypes, SwitchMediatorOptions options)
     {
         foreach (var handlerType in requestHandlerTypes)
@@ -122,57 +66,21 @@ public static class ServiceCollectionExtensions
 
     private static void RegisterNotificationHandlers(
         IServiceCollection services,
-        IReadOnlyList<Type> notificationHandlerTypes,
+        IEnumerable<(Type NotificationType, Type[] HandlerTypes)> notificationTypes,
         SwitchMediatorOptions options)
     {
-        // TODO: We should expand KnownTypes to avoid use of reflection here
-        
-        // 1. Register individual concrete handlers
-        foreach (var handlerType in notificationHandlerTypes)
+        foreach (var n in notificationTypes)
         {
-            services.TryAdd(new ServiceDescriptor(handlerType, handlerType, options.ServiceLifetime));
-        }
-
-        // 2. Group handlers by the specific notification type they implement
-        var handlersByNotificationType = notificationHandlerTypes
-            .SelectMany(handlerType => handlerType.GetInterfaces()
-                .Where(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(INotificationHandler<>))
-                .Select(i => (NotificationType: i.GetGenericArguments()[0], HandlerType: handlerType)))
-            .GroupBy(x => x.NotificationType)
-            .ToDictionary(g => g.Key, g => g.Select(x => x.HandlerType).Distinct().ToArray());
-
-        // 3. Get MethodInfo for the internal static OrderNotificationHandlers<TNotification> method
-        var orderMethodInfo = typeof(ServiceCollectionExtensions).GetMethod(nameof(OrderNotificationHandlers), BindingFlags.Static | BindingFlags.NonPublic);
-        if (orderMethodInfo == null)
-        {
-            throw new InvalidOperationException("Could not find the internal static 'OrderNotificationHandlers' method via reflection.");
-        }
-
-        // 4. Dynamically call the internal static method for each notification type
-        foreach (var kvp in handlersByNotificationType)
-        {
-            var notificationType = kvp.Key; // TNotification
-            var specificHandlerTypes = kvp.Value; // Type[] implementing INotificationHandler<TNotification>
-            if (options.OrderedNotificationHandlers.TryGetValue(notificationType, out var orderedHandlerTypes))
-            {
-                Sort(specificHandlerTypes, orderedHandlerTypes);
-            }
+            if (!options.OrderedNotificationHandlers.TryGetValue(n.NotificationType, out var orderedHandlerTypes))
+                continue;
             
-            try
+            Sort(n.HandlerTypes, orderedHandlerTypes);
+            foreach (var handlerType in n.HandlerTypes)
             {
-                // Create a closed generic method, e.g., OrderNotificationHandlers<MyNotification>
-                var concreteOrderMethod = orderMethodInfo.MakeGenericMethod(notificationType);
-
-                // Prepare arguments: IServiceCollection, Type[], ServiceLifetime
-                object[] methodArgs = [services, specificHandlerTypes, options.ServiceLifetime];
-
-                // Invoke the static method (instance is null)
-                concreteOrderMethod.Invoke(null, methodArgs);
-            }
-            catch (Exception ex) when (ex is TargetInvocationException or ArgumentException)
-            {
-                // Catch reflection or argument errors specifically
-                throw new InvalidOperationException($"Error registering ordered handlers for notification type '{notificationType.FullName}'. See inner exception.", ex);
+                services.TryAdd(new ServiceDescriptor(
+                    typeof(INotificationHandler<>).MakeGenericType(n.NotificationType),
+                    handlerType,
+                    options.ServiceLifetime));
             }
         }
     }
@@ -183,20 +91,6 @@ public static class ServiceCollectionExtensions
         {
             services.TryAdd(new ServiceDescriptor(behaviorType, behaviorType, options.ServiceLifetime));
         }
-    }
-
-    internal static void OrderNotificationHandlers<TNotification>(this IServiceCollection services, Type[] handlerTypes, ServiceLifetime serviceLifetime)
-        where TNotification : INotification
-    {
-        services.TryAdd(new ServiceDescriptor(
-            typeof(IEnumerable<INotificationHandler<TNotification>>),
-            sp => handlerTypes.Select(handlerType => GetNotificationHandler(sp, handlerType)),
-            serviceLifetime));
-        
-        return;
-
-        static INotificationHandler<TNotification> GetNotificationHandler(IServiceProvider sp, Type handlerType) => 
-            (INotificationHandler<TNotification>) sp.GetRequiredService(handlerType);
     }
     
     private static void Sort(Type[] typesToSort, Type[] specificOrder)

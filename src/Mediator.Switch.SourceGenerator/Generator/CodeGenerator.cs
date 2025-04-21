@@ -48,7 +48,10 @@ public static class CodeGenerator
         
         // Generate known types
         var requestHandlerTypes = handlers.Select(h => $"typeof({h.Class})");
-        var notificationHandlerTypes = notificationHandlers.Select(h => $"typeof({h.Class})");
+        var notificationTypes = notifications.Select(n => 
+            $"(typeof({n}), new Type[] {{\n                    {string.Join(",\n                    ", notificationHandlers
+                .Where(h => h.TNotification.Equals(n, SymbolEqualityComparer.Default))
+                .Select(h => $"typeof({h.Class})"))}\n                }})");
         var pipelineBehaviorTypes = behaviors.Select(b => $"typeof({b.Class.ToString().DropGenerics()}<,>)");
 
         // Generate the complete SwitchMediator class
@@ -95,9 +98,9 @@ public static class CodeGenerator
                    
                    #endregion
 
-                   public static (IReadOnlyList<Type> RequestHandlerTypes, IReadOnlyList<Type> NotificationHandlerTypes, IReadOnlyList<Type> PipelineBehaviorTypes) KnownTypes
+                   public static (IReadOnlyList<Type> RequestHandlerTypes, IReadOnlyList<(Type NotificationType, IReadOnlyList<Type> HandlerTypes)> NotificationTypes, IReadOnlyList<Type> PipelineBehaviorTypes) KnownTypes
                    {
-                       get { return (SwitchMediatorKnownTypes.RequestHandlerTypes, SwitchMediatorKnownTypes.NotificationHandlerTypes, SwitchMediatorKnownTypes.PipelineBehaviorTypes); }
+                       get { return (SwitchMediatorKnownTypes.RequestHandlerTypes, SwitchMediatorKnownTypes.NotificationTypes, SwitchMediatorKnownTypes.PipelineBehaviorTypes); }
                    }
                 
                    public Task<TResponse> Send<TResponse>(IRequest<TResponse> request, CancellationToken cancellationToken = default)
@@ -155,11 +158,11 @@ public static class CodeGenerator
                                {{string.Join(",\n                ", requestHandlerTypes)}}
                            }.AsReadOnly();
                    
-                       public static readonly IReadOnlyList<Type> NotificationHandlerTypes = 
-                          new Type[] {
-                               {{string.Join(",\n                ", notificationHandlerTypes)}}
+                       public static readonly IReadOnlyList<(Type NotificationType, IReadOnlyList<Type> HandlerTypes)> NotificationTypes = 
+                          new (Type NotificationType, IReadOnlyList<Type> HandlerTypes)[] {
+                               {{string.Join(",\n                ", notificationTypes)}}
                           }.AsReadOnly();
-                   
+               
                        public static readonly IReadOnlyList<Type> PipelineBehaviorTypes =
                           new Type[] {
                                {{string.Join(",\n                ", pipelineBehaviorTypes)}}
