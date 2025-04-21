@@ -1,5 +1,4 @@
-﻿using System.Reflection;
-using Microsoft.Extensions.DependencyInjection;
+﻿using Microsoft.Extensions.DependencyInjection;
 
 namespace Mediator.Switch.Extensions.Microsoft.DependencyInjection;
 
@@ -8,13 +7,11 @@ public class SwitchMediatorOptions
     /// <summary>
     /// Specifies SwitchMediator's pre-discovered types. These are the types that are discovered at compile-type, discovered by SwitchMediator.
     /// </summary>
-    public (IReadOnlyList<Type> RequestHandlerTypes, IReadOnlyList<Type> NotificationHandlerTypes, IReadOnlyList<Type> PipelineBehaviorTypes)
+    public (
+        IReadOnlyList<Type> RequestHandlerTypes, 
+        IReadOnlyList<(Type NotificationType, IReadOnlyList<Type> HandlerTypes)> NotificationTypes, 
+        IReadOnlyList<Type> PipelineBehaviorTypes)
         KnownTypes { get; set; }
-    
-    /// <summary>
-    /// The assemblies scanned for handlers and behaviors (typically not required if KnownTypes are specified).
-    /// </summary>
-    public Assembly[] TargetAssemblies { get; set; } = [];
     
     /// <summary>
     /// The default lifetime for the services registered by the mediator.

@@ -45,9 +45,9 @@ public class SwitchMediator : IMediator
 
     #endregion
 
-    public static (IReadOnlyList<Type> RequestHandlerTypes, IReadOnlyList<Type> NotificationHandlerTypes, IReadOnlyList<Type> PipelineBehaviorTypes) KnownTypes
+    public static (IReadOnlyList<Type> RequestHandlerTypes, IReadOnlyList<(Type NotificationType, IReadOnlyList<Type> HandlerTypes)> NotificationTypes, IReadOnlyList<Type> PipelineBehaviorTypes) KnownTypes
     {
-        get { return (SwitchMediatorKnownTypes.RequestHandlerTypes, SwitchMediatorKnownTypes.NotificationHandlerTypes, SwitchMediatorKnownTypes.PipelineBehaviorTypes); }
+        get { return (SwitchMediatorKnownTypes.RequestHandlerTypes, SwitchMediatorKnownTypes.NotificationTypes, SwitchMediatorKnownTypes.PipelineBehaviorTypes); }
     }
 
     public Task<TResponse> Send<TResponse>(IRequest<TResponse> request, CancellationToken cancellationToken = default)
@@ -193,12 +193,15 @@ public class SwitchMediator : IMediator
                 typeof(Tests.Polymorphics.VehicleRequestHandler)
             }.AsReadOnly();
 
-        public static readonly IReadOnlyList<Type> NotificationHandlerTypes =
-           new Type[] {
-                typeof(Tests.Polymorphics.UserCreatedEmailHandler),
-                typeof(Tests.Polymorphics.OrderPlacedInventoryHandler),
-                typeof(Tests.Polymorphics.GenericDomainEventHandler),
-                typeof(Tests.Polymorphics.UserCreatedAnalyticsHandler)
+        public static readonly IReadOnlyList<(Type NotificationType, IReadOnlyList<Type> HandlerTypes)> NotificationTypes =
+           new (Type NotificationType, IReadOnlyList<Type> HandlerTypes)[] {
+                (typeof(Tests.Polymorphics.UserCreatedEvent), new Type[] {
+                    typeof(Tests.Polymorphics.UserCreatedEmailHandler),
+                    typeof(Tests.Polymorphics.UserCreatedAnalyticsHandler)
+                }),
+                (typeof(Tests.Polymorphics.OrderPlacedEvent), new Type[] {
+                    typeof(Tests.Polymorphics.OrderPlacedInventoryHandler)
+                })
            }.AsReadOnly();
 
         public static readonly IReadOnlyList<Type> PipelineBehaviorTypes =
