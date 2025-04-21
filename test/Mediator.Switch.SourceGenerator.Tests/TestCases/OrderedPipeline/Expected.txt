@@ -7,6 +7,8 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
+#nullable enable
+
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -16,16 +18,16 @@ using System.Threading.Tasks;
 
 namespace Mediator.Switch;
 
-#pragma warning disable CS1998
+#pragma warning disable CS1998, CS0169
 
 public class SwitchMediator : IMediator
 {
     #region Fields
 
-    private Tests.OrderedPipeline.CalculationRequestHandler _tests_OrderedPipeline_CalculationRequestHandler;
-    private Tests.OrderedPipeline.MonitoringBehavior<Tests.OrderedPipeline.CalculationRequest, int> _tests_OrderedPipeline_MonitoringBehavior__tests_OrderedPipeline_CalculationRequest;
-    private Tests.OrderedPipeline.ValidationBehavior<Tests.OrderedPipeline.CalculationRequest, int> _tests_OrderedPipeline_ValidationBehavior__tests_OrderedPipeline_CalculationRequest;
-    private Tests.OrderedPipeline.LoggingBehavior<Tests.OrderedPipeline.CalculationRequest, int> _tests_OrderedPipeline_LoggingBehavior__tests_OrderedPipeline_CalculationRequest;
+    private Tests.OrderedPipeline.CalculationRequestHandler? _tests_OrderedPipeline_CalculationRequestHandler;
+    private Tests.OrderedPipeline.MonitoringBehavior<Tests.OrderedPipeline.CalculationRequest, int>? _tests_OrderedPipeline_MonitoringBehavior__tests_OrderedPipeline_CalculationRequest;
+    private Tests.OrderedPipeline.ValidationBehavior<Tests.OrderedPipeline.CalculationRequest, int>? _tests_OrderedPipeline_ValidationBehavior__tests_OrderedPipeline_CalculationRequest;
+    private Tests.OrderedPipeline.LoggingBehavior<Tests.OrderedPipeline.CalculationRequest, int>? _tests_OrderedPipeline_LoggingBehavior__tests_OrderedPipeline_CalculationRequest;
 
     private readonly ISwitchMediatorServiceProvider _svc;
 

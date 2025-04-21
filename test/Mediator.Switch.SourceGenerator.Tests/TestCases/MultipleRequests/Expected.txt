@@ -7,6 +7,8 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
+#nullable enable
+
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -16,14 +18,14 @@ using System.Threading.Tasks;
 
 namespace Mediator.Switch;
 
-#pragma warning disable CS1998
+#pragma warning disable CS1998, CS0169
 
 public class SwitchMediator : IMediator
 {
     #region Fields
 
-    private Tests.MultipleRequests.GetProductRequestHandler _tests_MultipleRequests_GetProductRequestHandler;
-    private Tests.MultipleRequests.GetInventoryRequestHandler _tests_MultipleRequests_GetInventoryRequestHandler;
+    private Tests.MultipleRequests.GetProductRequestHandler? _tests_MultipleRequests_GetProductRequestHandler;
+    private Tests.MultipleRequests.GetInventoryRequestHandler? _tests_MultipleRequests_GetInventoryRequestHandler;
 
     private readonly ISwitchMediatorServiceProvider _svc;
 

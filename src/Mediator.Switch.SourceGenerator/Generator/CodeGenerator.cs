@@ -16,18 +16,18 @@ public static class CodeGenerator
         List<(ITypeSymbol Class, ITypeSymbol TRequest, ITypeSymbol TResponse, IReadOnlyList<ITypeParameterSymbol> TypeParameters)> behaviors)
     {
         // Generate fields
-        var handlerFields = handlers.Select(h => $"private {h.Class} _{h.Class.GetVariableName()};");
+        var handlerFields = handlers.Select(h => $"private {h.Class}? _{h.Class.GetVariableName()};");
 
         // Generate behavior fields specific to each request, respecting constraints
         var behaviorFields = requestBehaviors.SelectMany(r =>
         {
             var (request, applicableBehaviors) = r;
             return applicableBehaviors.Select(b =>
-                $"private {b.Class.ToString().DropGenerics()}<{request.Class}, {b.TResponse}> _{b.Class.GetVariableName()}__{request.Class.GetVariableName()};");
+                $"private {b.Class.ToString().DropGenerics()}<{request.Class}, {b.TResponse}>? _{b.Class.GetVariableName()}__{request.Class.GetVariableName()};");
         });
         
         var notificationHandlerFields = notifications.Select(n =>
-            $"private IEnumerable<INotificationHandler<{n}>> _{n.GetVariableName()}__Handlers;");
+            $"private IEnumerable<INotificationHandler<{n}>>? _{n.GetVariableName()}__Handlers;");
 
         // Generate Send method switch cases
         var sendCases = requestBehaviors
@@ -63,6 +63,8 @@ public static class CodeGenerator
                // </auto-generated>
                //------------------------------------------------------------------------------
                
+               #nullable enable
+               
                using System;
                using System.Collections.Generic;
                using System.Diagnostics;
@@ -72,7 +74,7 @@ public static class CodeGenerator
                
                namespace Mediator.Switch;
                
-               #pragma warning disable CS1998
+               #pragma warning disable CS1998, CS0169
 
                public class SwitchMediator : IMediator
                {

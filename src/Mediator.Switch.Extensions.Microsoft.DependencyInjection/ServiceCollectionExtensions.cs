@@ -125,6 +125,8 @@ public static class ServiceCollectionExtensions
         IReadOnlyList<Type> notificationHandlerTypes,
         SwitchMediatorOptions options)
     {
+        // TODO: We should expand KnownTypes to avoid use of reflection here
+        
         // 1. Register individual concrete handlers
         foreach (var handlerType in notificationHandlerTypes)
         {

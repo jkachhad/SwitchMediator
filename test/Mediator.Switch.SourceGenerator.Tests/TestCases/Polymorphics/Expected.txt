@@ -7,6 +7,8 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
+#nullable enable
+
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -16,19 +18,19 @@ using System.Threading.Tasks;
 
 namespace Mediator.Switch;
 
-#pragma warning disable CS1998
+#pragma warning disable CS1998, CS0169
 
 public class SwitchMediator : IMediator
 {
     #region Fields
 
-    private Tests.Polymorphics.DogRequestHandler _tests_Polymorphics_DogRequestHandler;
-    private Tests.Polymorphics.CatRequestHandler _tests_Polymorphics_CatRequestHandler;
-    private Tests.Polymorphics.GenericAnimalRequestHandler _tests_Polymorphics_GenericAnimalRequestHandler;
-    private Tests.Polymorphics.CarRequestHandler _tests_Polymorphics_CarRequestHandler;
-    private Tests.Polymorphics.VehicleRequestHandler _tests_Polymorphics_VehicleRequestHandler;
-    private IEnumerable<INotificationHandler<Tests.Polymorphics.UserCreatedEvent>> _tests_Polymorphics_UserCreatedEvent__Handlers;
-    private IEnumerable<INotificationHandler<Tests.Polymorphics.OrderPlacedEvent>> _tests_Polymorphics_OrderPlacedEvent__Handlers;
+    private Tests.Polymorphics.DogRequestHandler? _tests_Polymorphics_DogRequestHandler;
+    private Tests.Polymorphics.CatRequestHandler? _tests_Polymorphics_CatRequestHandler;
+    private Tests.Polymorphics.GenericAnimalRequestHandler? _tests_Polymorphics_GenericAnimalRequestHandler;
+    private Tests.Polymorphics.CarRequestHandler? _tests_Polymorphics_CarRequestHandler;
+    private Tests.Polymorphics.VehicleRequestHandler? _tests_Polymorphics_VehicleRequestHandler;
+    private IEnumerable<INotificationHandler<Tests.Polymorphics.UserCreatedEvent>>? _tests_Polymorphics_UserCreatedEvent__Handlers;
+    private IEnumerable<INotificationHandler<Tests.Polymorphics.OrderPlacedEvent>>? _tests_Polymorphics_OrderPlacedEvent__Handlers;
 
     private readonly ISwitchMediatorServiceProvider _svc;
 

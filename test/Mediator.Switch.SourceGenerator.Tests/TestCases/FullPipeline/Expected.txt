@@ -7,6 +7,8 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
+#nullable enable
+
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -16,21 +18,21 @@ using System.Threading.Tasks;
 
 namespace Mediator.Switch;
 
-#pragma warning disable CS1998
+#pragma warning disable CS1998, CS0169
 
 public class SwitchMediator : IMediator
 {
     #region Fields
 
-    private Tests.FullPipeline.GetUserRequestHandler _tests_FullPipeline_GetUserRequestHandler;
-    private Tests.FullPipeline.CreateOrderRequestHandler _tests_FullPipeline_CreateOrderRequestHandler;
-    private Tests.FullPipeline.AuditBehavior<Tests.FullPipeline.GetUserRequest, string> _tests_FullPipeline_AuditBehavior__tests_FullPipeline_GetUserRequest;
-    private Tests.FullPipeline.ValidationBehavior<Tests.FullPipeline.GetUserRequest, string> _tests_FullPipeline_ValidationBehavior__tests_FullPipeline_GetUserRequest;
-    private Tests.FullPipeline.LoggingBehavior<Tests.FullPipeline.GetUserRequest, string> _tests_FullPipeline_LoggingBehavior__tests_FullPipeline_GetUserRequest;
-    private Tests.FullPipeline.TransactionBehavior<Tests.FullPipeline.CreateOrderRequest, int> _tests_FullPipeline_TransactionBehavior__tests_FullPipeline_CreateOrderRequest;
-    private Tests.FullPipeline.ValidationBehavior<Tests.FullPipeline.CreateOrderRequest, int> _tests_FullPipeline_ValidationBehavior__tests_FullPipeline_CreateOrderRequest;
-    private Tests.FullPipeline.LoggingBehavior<Tests.FullPipeline.CreateOrderRequest, int> _tests_FullPipeline_LoggingBehavior__tests_FullPipeline_CreateOrderRequest;
-    private IEnumerable<INotificationHandler<Tests.FullPipeline.UserLoggedInEvent>> _tests_FullPipeline_UserLoggedInEvent__Handlers;
+    private Tests.FullPipeline.GetUserRequestHandler? _tests_FullPipeline_GetUserRequestHandler;
+    private Tests.FullPipeline.CreateOrderRequestHandler? _tests_FullPipeline_CreateOrderRequestHandler;
+    private Tests.FullPipeline.AuditBehavior<Tests.FullPipeline.GetUserRequest, string>? _tests_FullPipeline_AuditBehavior__tests_FullPipeline_GetUserRequest;
+    private Tests.FullPipeline.ValidationBehavior<Tests.FullPipeline.GetUserRequest, string>? _tests_FullPipeline_ValidationBehavior__tests_FullPipeline_GetUserRequest;
+    private Tests.FullPipeline.LoggingBehavior<Tests.FullPipeline.GetUserRequest, string>? _tests_FullPipeline_LoggingBehavior__tests_FullPipeline_GetUserRequest;
+    private Tests.FullPipeline.TransactionBehavior<Tests.FullPipeline.CreateOrderRequest, int>? _tests_FullPipeline_TransactionBehavior__tests_FullPipeline_CreateOrderRequest;
+    private Tests.FullPipeline.ValidationBehavior<Tests.FullPipeline.CreateOrderRequest, int>? _tests_FullPipeline_ValidationBehavior__tests_FullPipeline_CreateOrderRequest;
+    private Tests.FullPipeline.LoggingBehavior<Tests.FullPipeline.CreateOrderRequest, int>? _tests_FullPipeline_LoggingBehavior__tests_FullPipeline_CreateOrderRequest;
+    private IEnumerable<INotificationHandler<Tests.FullPipeline.UserLoggedInEvent>>? _tests_FullPipeline_UserLoggedInEvent__Handlers;
 
     private readonly ISwitchMediatorServiceProvider _svc;
 

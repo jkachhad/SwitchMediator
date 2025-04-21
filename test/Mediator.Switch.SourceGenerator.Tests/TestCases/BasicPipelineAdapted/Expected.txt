@@ -7,6 +7,8 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
+#nullable enable
+
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -16,15 +18,15 @@ using System.Threading.Tasks;
 
 namespace Mediator.Switch;
 
-#pragma warning disable CS1998
+#pragma warning disable CS1998, CS0169
 
 public class SwitchMediator : IMediator
 {
     #region Fields
 
-    private Tests.BasicPipelineAdapted.PingHandler _tests_BasicPipelineAdapted_PingHandler;
-    private Tests.BasicPipelineAdapted.PongHandler _tests_BasicPipelineAdapted_PongHandler;
-    private Tests.BasicPipelineAdapted.GenericBehavior<Tests.BasicPipelineAdapted.Ping, Tests.BasicPipelineAdapted.VersionedResponse> _tests_BasicPipelineAdapted_GenericBehavior__tests_BasicPipelineAdapted_Ping;
+    private Tests.BasicPipelineAdapted.PingHandler? _tests_BasicPipelineAdapted_PingHandler;
+    private Tests.BasicPipelineAdapted.PongHandler? _tests_BasicPipelineAdapted_PongHandler;
+    private Tests.BasicPipelineAdapted.GenericBehavior<Tests.BasicPipelineAdapted.Ping, Tests.BasicPipelineAdapted.VersionedResponse>? _tests_BasicPipelineAdapted_GenericBehavior__tests_BasicPipelineAdapted_Ping;
 
     private readonly ISwitchMediatorServiceProvider _svc;
 
