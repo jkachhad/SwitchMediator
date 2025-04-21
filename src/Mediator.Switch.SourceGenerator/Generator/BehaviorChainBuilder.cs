@@ -13,7 +13,7 @@ public static class BehaviorChainBuilder
                 .Aggregate(
                     seed: chain,
                     func: (innerChain, behavior) =>
-                        $"_{behavior.Class.GetVariableName()}__{requestName}.Handle(request, () => \n            {innerChain},\n            cancellationToken)"
+                        $"Get(ref _{behavior.Class.GetVariableName()}__{requestName}).Handle(request, () => \n            {innerChain},\n            cancellationToken)"
                 )
             : chain;
     }

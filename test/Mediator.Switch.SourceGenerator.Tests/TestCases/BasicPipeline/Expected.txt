@@ -9,6 +9,8 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -20,19 +22,18 @@ public class SwitchMediator : IMediator
 {
     #region Fields
 
-    private readonly Tests.BasicPipeline.PingHandler _tests_BasicPipeline_PingHandler;
-    private readonly Tests.BasicPipeline.GenericBehavior<Tests.BasicPipeline.Ping, string> _tests_BasicPipeline_GenericBehavior__tests_BasicPipeline_Ping;
+    private Tests.BasicPipeline.PingHandler _tests_BasicPipeline_PingHandler;
+    private Tests.BasicPipeline.GenericBehavior<Tests.BasicPipeline.Ping, string> _tests_BasicPipeline_GenericBehavior__tests_BasicPipeline_Ping;
+
+    private readonly ISwitchMediatorServiceProvider _svc;
 
     #endregion
 
     #region Constructor
 
-    public SwitchMediator(
-        Tests.BasicPipeline.PingHandler tests_BasicPipeline_PingHandler,
-        Tests.BasicPipeline.GenericBehavior<Tests.BasicPipeline.Ping, string> tests_BasicPipeline_GenericBehavior__tests_BasicPipeline_Ping)
+    public SwitchMediator(ISwitchMediatorServiceProvider serviceProvider)
     {
-        _tests_BasicPipeline_PingHandler = tests_BasicPipeline_PingHandler;
-        _tests_BasicPipeline_GenericBehavior__tests_BasicPipeline_Ping = tests_BasicPipeline_GenericBehavior__tests_BasicPipeline_Ping;
+        _svc = serviceProvider;
     }
 
     #endregion
@@ -87,9 +88,16 @@ public class SwitchMediator : IMediator
         CancellationToken cancellationToken)
     {
         return
-            _tests_BasicPipeline_GenericBehavior__tests_BasicPipeline_Ping.Handle(request, () =>
-            /* Request Handler */ _tests_BasicPipeline_PingHandler.Handle(request, cancellationToken),
+            Get(ref _tests_BasicPipeline_GenericBehavior__tests_BasicPipeline_Ping).Handle(request, () =>
+            /* Request Handler */ Get(ref _tests_BasicPipeline_PingHandler).Handle(request, cancellationToken),
             cancellationToken);
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    [DebuggerStepThrough]
+    private T Get<T>(ref T? field) where T : notnull
+    {
+        return field ?? (field = _svc.Get<T>());
     }
 
     /// <summary>

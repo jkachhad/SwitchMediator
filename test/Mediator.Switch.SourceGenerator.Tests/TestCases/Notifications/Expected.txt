@@ -9,6 +9,8 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -20,19 +22,18 @@ public class SwitchMediator : IMediator
 {
     #region Fields
 
-    private readonly Tests.Notifications.SimpleRequestHandler _tests_Notifications_SimpleRequestHandler;
-    private readonly IEnumerable<INotificationHandler<Tests.Notifications.OrderCreatedEvent>> _tests_Notifications_OrderCreatedEvent__Handlers;
+    private Tests.Notifications.SimpleRequestHandler _tests_Notifications_SimpleRequestHandler;
+    private IEnumerable<INotificationHandler<Tests.Notifications.OrderCreatedEvent>> _tests_Notifications_OrderCreatedEvent__Handlers;
+
+    private readonly ISwitchMediatorServiceProvider _svc;
 
     #endregion
 
     #region Constructor
 
-    public SwitchMediator(
-        Tests.Notifications.SimpleRequestHandler tests_Notifications_SimpleRequestHandler,
-        IEnumerable<INotificationHandler<Tests.Notifications.OrderCreatedEvent>> tests_Notifications_OrderCreatedEvent__Handlers)
+    public SwitchMediator(ISwitchMediatorServiceProvider serviceProvider)
     {
-        _tests_Notifications_SimpleRequestHandler = tests_Notifications_SimpleRequestHandler;
-        _tests_Notifications_OrderCreatedEvent__Handlers = tests_Notifications_OrderCreatedEvent__Handlers;
+        _svc = serviceProvider;
     }
 
     #endregion
@@ -81,7 +82,7 @@ public class SwitchMediator : IMediator
             { // case Tests.Notifications.OrderCreatedEvent:
                 typeof(Tests.Notifications.OrderCreatedEvent), async (instance, notification, cancellationToken) =>
                 {
-                    foreach (var handler in instance._tests_Notifications_OrderCreatedEvent__Handlers)
+                    foreach (var handler in instance.Get(ref instance._tests_Notifications_OrderCreatedEvent__Handlers))
                     {
                         await handler.Handle((Tests.Notifications.OrderCreatedEvent)notification, cancellationToken);
                     }
@@ -95,7 +96,14 @@ public class SwitchMediator : IMediator
         CancellationToken cancellationToken)
     {
         return
-            /* Request Handler */ _tests_Notifications_SimpleRequestHandler.Handle(request, cancellationToken);
+            /* Request Handler */ Get(ref _tests_Notifications_SimpleRequestHandler).Handle(request, cancellationToken);
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    [DebuggerStepThrough]
+    private T Get<T>(ref T? field) where T : notnull
+    {
+        return field ?? (field = _svc.Get<T>());
     }
 
     /// <summary>

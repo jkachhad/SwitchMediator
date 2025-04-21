@@ -9,6 +9,8 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -20,19 +22,18 @@ public class SwitchMediator : IMediator
 {
     #region Fields
 
-    private readonly Tests.BasicPipelineNestedType.PingHandler _tests_BasicPipelineNestedType_PingHandler;
-    private readonly Tests.BasicPipelineNestedType.GenericBehavior<Tests.BasicPipelineNestedType.Ping, Tests.BasicPipelineNestedType.Result<Tests.BasicPipelineNestedType.VersionedResponse>> _tests_BasicPipelineNestedType_GenericBehavior__tests_BasicPipelineNestedType_Ping;
+    private Tests.BasicPipelineNestedType.PingHandler _tests_BasicPipelineNestedType_PingHandler;
+    private Tests.BasicPipelineNestedType.GenericBehavior<Tests.BasicPipelineNestedType.Ping, Tests.BasicPipelineNestedType.Result<Tests.BasicPipelineNestedType.VersionedResponse>> _tests_BasicPipelineNestedType_GenericBehavior__tests_BasicPipelineNestedType_Ping;
+
+    private readonly ISwitchMediatorServiceProvider _svc;
 
     #endregion
 
     #region Constructor
 
-    public SwitchMediator(
-        Tests.BasicPipelineNestedType.PingHandler tests_BasicPipelineNestedType_PingHandler,
-        Tests.BasicPipelineNestedType.GenericBehavior<Tests.BasicPipelineNestedType.Ping, Tests.BasicPipelineNestedType.Result<Tests.BasicPipelineNestedType.VersionedResponse>> tests_BasicPipelineNestedType_GenericBehavior__tests_BasicPipelineNestedType_Ping)
+    public SwitchMediator(ISwitchMediatorServiceProvider serviceProvider)
     {
-        _tests_BasicPipelineNestedType_PingHandler = tests_BasicPipelineNestedType_PingHandler;
-        _tests_BasicPipelineNestedType_GenericBehavior__tests_BasicPipelineNestedType_Ping = tests_BasicPipelineNestedType_GenericBehavior__tests_BasicPipelineNestedType_Ping;
+        _svc = serviceProvider;
     }
 
     #endregion
@@ -87,9 +88,16 @@ public class SwitchMediator : IMediator
         CancellationToken cancellationToken)
     {
         return
-            _tests_BasicPipelineNestedType_GenericBehavior__tests_BasicPipelineNestedType_Ping.Handle(request, () =>
-            /* Request Handler */ _tests_BasicPipelineNestedType_PingHandler.Handle(request, cancellationToken),
+            Get(ref _tests_BasicPipelineNestedType_GenericBehavior__tests_BasicPipelineNestedType_Ping).Handle(request, () =>
+            /* Request Handler */ Get(ref _tests_BasicPipelineNestedType_PingHandler).Handle(request, cancellationToken),
             cancellationToken);
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    [DebuggerStepThrough]
+    private T Get<T>(ref T? field) where T : notnull
+    {
+        return field ?? (field = _svc.Get<T>());
     }
 
     /// <summary>

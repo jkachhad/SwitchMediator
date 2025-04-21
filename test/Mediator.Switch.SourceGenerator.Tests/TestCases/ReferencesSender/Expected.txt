@@ -9,6 +9,8 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -20,16 +22,17 @@ public class SwitchMediator : IMediator
 {
     #region Fields
 
-    private readonly Lazy<Tests.ReferencesSender.PingHandler> _tests_ReferencesSender_PingHandler;
+    private Tests.ReferencesSender.PingHandler _tests_ReferencesSender_PingHandler;
+
+    private readonly ISwitchMediatorServiceProvider _svc;
 
     #endregion
 
     #region Constructor
 
-    public SwitchMediator(
-        Lazy<Tests.ReferencesSender.PingHandler> tests_ReferencesSender_PingHandler)
+    public SwitchMediator(ISwitchMediatorServiceProvider serviceProvider)
     {
-        _tests_ReferencesSender_PingHandler = tests_ReferencesSender_PingHandler;
+        _svc = serviceProvider;
     }
 
     #endregion
@@ -84,7 +87,14 @@ public class SwitchMediator : IMediator
         CancellationToken cancellationToken)
     {
         return
-            /* Request Handler */ _tests_ReferencesSender_PingHandler.Value.Handle(request, cancellationToken);
+            /* Request Handler */ Get(ref _tests_ReferencesSender_PingHandler).Handle(request, cancellationToken);
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    [DebuggerStepThrough]
+    private T Get<T>(ref T? field) where T : notnull
+    {
+        return field ?? (field = _svc.Get<T>());
     }
 
     /// <summary>

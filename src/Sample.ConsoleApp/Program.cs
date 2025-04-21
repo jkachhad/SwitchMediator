@@ -11,7 +11,7 @@ public static class Program
     {
         var services = new ServiceCollection()
             .AddValidatorsFromAssembly(typeof(Program).Assembly)
-            
+
             // Register SwitchMediator
             .AddMediator<SwitchMediator>(op =>
             {
@@ -23,7 +23,7 @@ public static class Program
                     // e.g., typeof(UserLoggedInAnalytics)
                 );
             });
-
+            
         var serviceProvider = services.BuildServiceProvider();
 
         using var scope = serviceProvider.CreateScope();
