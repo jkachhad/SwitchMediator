@@ -9,9 +9,6 @@ namespace Mediator.Switch.SourceGenerator;
 public class SemanticAnalyzer
 {
     private readonly Compilation _compilation;
-    private readonly INamedTypeSymbol _iMediatorSymbol;
-    private readonly INamedTypeSymbol _iSenderSymbol;
-    private readonly INamedTypeSymbol _iPublisherSymbol;
     private readonly INamedTypeSymbol _iRequestSymbol;
     private readonly INamedTypeSymbol _iRequestHandlerSymbol;
     private readonly INamedTypeSymbol _iPipelineBehaviorSymbol;
@@ -28,9 +25,10 @@ public class SemanticAnalyzer
     {
         _compilation = compilation;
 
-        _iMediatorSymbol = compilation.GetTypeByMetadataName("Mediator.Switch.IMediator") ?? throw new InvalidOperationException("Could not find Mediator.Switch.IMediator");
-        _iSenderSymbol = compilation.GetTypeByMetadataName("Mediator.Switch.ISender") ?? throw new InvalidOperationException("Could not find Mediator.Switch.ISender");
-        _iPublisherSymbol = compilation.GetTypeByMetadataName("Mediator.Switch.IPublisher") ?? throw new InvalidOperationException("Could not find Mediator.Switch.IPublisher");
+        _ = compilation.GetTypeByMetadataName("Mediator.Switch.IMediator") ?? throw new InvalidOperationException("Could not find Mediator.Switch.IMediator");
+        _ = compilation.GetTypeByMetadataName("Mediator.Switch.ISender") ?? throw new InvalidOperationException("Could not find Mediator.Switch.ISender");
+        _ = compilation.GetTypeByMetadataName("Mediator.Switch.IPublisher") ?? throw new InvalidOperationException("Could not find Mediator.Switch.IPublisher");
+        
         _iRequestSymbol = compilation.GetTypeByMetadataName("Mediator.Switch.IRequest`1") ?? throw new InvalidOperationException("Could not find Mediator.Switch.IRequest`1");
         _iRequestHandlerSymbol = compilation.GetTypeByMetadataName("Mediator.Switch.IRequestHandler`2") ?? throw new InvalidOperationException("Could not find Mediator.Switch.IRequestHandler`2");
         _iPipelineBehaviorSymbol = compilation.GetTypeByMetadataName("Mediator.Switch.IPipelineBehavior`2") ?? throw new InvalidOperationException("Could not find Mediator.Switch.IPipelineBehavior`2");
@@ -41,18 +39,18 @@ public class SemanticAnalyzer
         _requestHandlerAttributeSymbol = compilation.GetTypeByMetadataName("Mediator.Switch.RequestHandlerAttribute") ?? throw new InvalidOperationException("Could not find Mediator.Switch.RequestHandlerAttribute");
     }
 
-    public (List<(ITypeSymbol Class, ITypeSymbol TRequest, ITypeSymbol TResponse, bool HasMediatorRefInCtor)> Handlers,
+    public (List<(ITypeSymbol Class, ITypeSymbol TRequest, ITypeSymbol TResponse)> Handlers,
         List<((ITypeSymbol Class, ITypeSymbol TResponse) Request, List<(ITypeSymbol Class, ITypeSymbol TRequest, ITypeSymbol TResponse, IReadOnlyList<ITypeParameterSymbol> TypeParameters)> Behaviors)> RequestBehaviors,
-        List<(ITypeSymbol Class, ITypeSymbol TNotification, bool HasMediatorRefInCtor)> NotificationHandlers,
-        List<(ITypeSymbol NotificationClass, bool HasMediatorRefInCtor)> Notifications,
+        List<(ITypeSymbol Class, ITypeSymbol TNotification)> NotificationHandlers,
+        List<ITypeSymbol> Notifications,
         List<(ITypeSymbol Class, ITypeSymbol TRequest, ITypeSymbol TResponse, IReadOnlyList<ITypeParameterSymbol> TypeParameters)> Behaviors)
         Analyze(List<TypeDeclarationSyntax> types, CancellationToken cancellationToken)
     {
         var requests = new List<(ITypeSymbol Class, ITypeSymbol TResponse)>();
-        var handlers = new List<(ITypeSymbol Class, ITypeSymbol TRequest, ITypeSymbol TResponse, bool HasMediatorRefInCtor)>();
+        var handlers = new List<(ITypeSymbol Class, ITypeSymbol TRequest, ITypeSymbol TResponse)>();
         var behaviors = new List<(ITypeSymbol Class, ITypeSymbol TRequest, ITypeSymbol TResponse, IReadOnlyList<ITypeParameterSymbol> TypeParameters)>();
         var notifications = new List<ITypeSymbol>();
-        var notificationHandlers = new List<(ITypeSymbol Class, ITypeSymbol TNotification, bool HasMediatorRefInCtor)>();
+        var notificationHandlers = new List<(ITypeSymbol Class, ITypeSymbol TNotification)>();
 
         foreach (var typeSyntax in types)
         {
@@ -63,19 +61,18 @@ public class SemanticAnalyzer
         cancellationToken.ThrowIfCancellationRequested();
 
         var requestBehaviors = ProcessRequestBehaviors(requests, behaviors);
-        var finalNotifications = DetermineNotificationHandlerDependencies(notifications, notificationHandlers);
 
-        return (handlers, requestBehaviors, notificationHandlers, finalNotifications, behaviors);
+        return (handlers, requestBehaviors, notificationHandlers, notifications, behaviors);
     }
 
     private void AnalyzeTypeSyntax(
         TypeDeclarationSyntax typeSyntax,
         CancellationToken cancellationToken,
         List<(ITypeSymbol Class, ITypeSymbol TResponse)> requests,
-        List<(ITypeSymbol Class, ITypeSymbol TRequest, ITypeSymbol TResponse, bool HasMediatorRefInCtor)> handlers,
+        List<(ITypeSymbol Class, ITypeSymbol TRequest, ITypeSymbol TResponse)> handlers,
         List<(ITypeSymbol Class, ITypeSymbol TRequest, ITypeSymbol TResponse, IReadOnlyList<ITypeParameterSymbol> TypeParameters)> behaviors,
         List<ITypeSymbol> notifications,
-        List<(ITypeSymbol Class, ITypeSymbol TNotification, bool HasMediatorRefInCtor)> notificationHandlers)
+        List<(ITypeSymbol Class, ITypeSymbol TNotification)> notificationHandlers)
     {
         var model = _compilation.GetSemanticModel(typeSyntax.SyntaxTree);
         if (model.GetDeclaredSymbol(typeSyntax, cancellationToken) is not {Kind: SymbolKind.NamedType} typeSymbol)
@@ -104,7 +101,7 @@ public class SemanticAnalyzer
         }
     }
 
-    private void TryAddRequestHandler(INamedTypeSymbol typeSymbol, List<(ITypeSymbol Class, ITypeSymbol TRequest, ITypeSymbol TResponse, bool HasMediatorRefInCtor)> handlers)
+    private void TryAddRequestHandler(INamedTypeSymbol typeSymbol, List<(ITypeSymbol Class, ITypeSymbol TRequest, ITypeSymbol TResponse)> handlers)
     {
         var handlerInterface = typeSymbol.AllInterfaces.FirstOrDefault(i =>
             SymbolEqualityComparer.Default.Equals(i.OriginalDefinition, _iRequestHandlerSymbol));
@@ -115,8 +112,7 @@ public class SemanticAnalyzer
             var tRequest = handlerInterface.TypeArguments[0];
             var tResponse = handlerInterface.TypeArguments[1];
             VerifyRequestMatchesHandler(typeSymbol, tRequest); // Verify attribute if present
-            var hasDependency = ConstructorHasMediatorDependencies(typeSymbol, out _);
-            handlers.Add((typeSymbol, tRequest, tResponse, hasDependency));
+            handlers.Add((typeSymbol, tRequest, tResponse));
         }
     }
 
@@ -132,7 +128,6 @@ public class SemanticAnalyzer
             var tResponse = behaviorInterface.TypeArguments[1];
             var typeParameters = typeSymbol.TypeParameters;
             VerifyAdaptorMatchesTResponse(typeSymbol, tResponse); // Verify attribute if present
-            VerifyConstructorDoesNotHaveMediatorDependencies(typeSymbol); // Verify no forbidden dependencies
             behaviors.Add((typeSymbol, tRequest, tResponse, typeParameters));
         }
     }
@@ -153,7 +148,7 @@ public class SemanticAnalyzer
         }
     }
 
-    private void TryAddNotificationHandler(INamedTypeSymbol typeSymbol, List<(ITypeSymbol Class, ITypeSymbol TNotification, bool HasMediatorRefInCtor)> notificationHandlers)
+    private void TryAddNotificationHandler(INamedTypeSymbol typeSymbol, List<(ITypeSymbol Class, ITypeSymbol TNotification)> notificationHandlers)
     {
         var notificationHandlerInterface = typeSymbol.AllInterfaces.FirstOrDefault(i =>
             SymbolEqualityComparer.Default.Equals(i.OriginalDefinition, _iNotificationHandlerSymbol));
@@ -164,8 +159,7 @@ public class SemanticAnalyzer
             var notification = notificationHandlerInterface.TypeArguments.FirstOrDefault();
             if (notification != null)
             {
-                var hasDependency = ConstructorHasMediatorDependencies(typeSymbol, out _);
-                notificationHandlers.Add((typeSymbol, notification, hasDependency));
+                notificationHandlers.Add((typeSymbol, notification));
             }
         }
     }
@@ -188,35 +182,6 @@ public class SemanticAnalyzer
                 .OrderByDescending(b => GetOrder(b.Class)) // Order by attribute
                 .ToList()))
             .ToList();
-    }
-
-    private List<(ITypeSymbol Class, bool HasMediatorRefInCtor)> DetermineNotificationHandlerDependencies(
-            List<ITypeSymbol> notifications,
-            List<(ITypeSymbol Class, ITypeSymbol TNotification, bool HasMediatorRefInCtor)> notificationHandlers)
-    {
-        var finalNotifications = new List<(ITypeSymbol Class, bool HasMediatorRefInCtor)>();
-
-        foreach (var notificationType in notifications)
-        {
-            // Find handlers specifically for this notification type
-            var specificHandlers = notificationHandlers
-                .Where(info => SymbolEqualityComparer.Default.Equals(info.TNotification, notificationType))
-                .Select(info => info.Class)
-                .OfType<INamedTypeSymbol>();
-
-            // Check if any of these handlers have the dependency
-            var anyHandlerHasDependency = false;
-            foreach (var handlerClass in specificHandlers)
-            {
-                if (ConstructorHasMediatorDependencies(handlerClass, out _))
-                {
-                    anyHandlerHasDependency = true;
-                    break; // Optimization: stop checking once one is found
-                }
-            }
-            finalNotifications.Add((Class: notificationType, HasMediatorRefInCtor: anyHandlerHasDependency));
-        }
-        return finalNotifications;
     }
     
     private void VerifyRequestMatchesHandler(INamedTypeSymbol classSymbol, ITypeSymbol handledType)
@@ -253,17 +218,6 @@ public class SemanticAnalyzer
             throw new SourceGenerationException($"{nameof(PipelineBehaviorResponseAdaptorAttribute)}.{nameof(PipelineBehaviorResponseAdaptorAttribute.GenericsType)} does not match IPipelineBehavior's TResponse argument.",
                 syntaxReference != null ? Location.Create(syntaxReference.SyntaxTree, syntaxReference.Span) : Location.None);
         }
-    }
-
-    private void VerifyConstructorDoesNotHaveMediatorDependencies(INamedTypeSymbol classSymbol)
-    {
-        if (!ConstructorHasMediatorDependencies(classSymbol, out var constructor)) return;
-
-        var syntaxReference = constructor!.DeclaringSyntaxReferences.FirstOrDefault();
-        var location = Location.None;
-        if (syntaxReference != null) location = Location.Create(syntaxReference.SyntaxTree, syntaxReference.Span);
-
-        throw new SourceGenerationException($"PipelineBehavior '{classSymbol.ToDisplayString()}' constructors are not allowed to take dependencies on IMediator, ISender, or IPublisher.", location);
     }
 
     private ITypeSymbol? TryUnwrapRequestTResponse(
@@ -304,28 +258,7 @@ public class SemanticAnalyzer
 
         return typeArgSymbol;
     }
-
-    private bool ConstructorHasMediatorDependencies(INamedTypeSymbol typeSymbol, out IMethodSymbol? ctor)
-    {
-        ctor = null;
-        foreach (var constructor in typeSymbol.Constructors.Where(c => !c.IsStatic))
-        {
-            foreach (var parameter in constructor.Parameters)
-            {
-                if (parameter.Type.OriginalDefinition is not {} originalParamTypeDef) continue; // Skip if type or definition is null
-
-                if (SymbolEqualityComparer.Default.Equals(originalParamTypeDef, _iMediatorSymbol) ||
-                    SymbolEqualityComparer.Default.Equals(originalParamTypeDef, _iSenderSymbol) ||
-                    SymbolEqualityComparer.Default.Equals(originalParamTypeDef, _iPublisherSymbol))
-                {
-                    ctor = constructor;
-                    return true;
-                }
-            }
-        }
-        return false;
-    }
-
+    
     private int GetOrder(ITypeSymbol typeSymbol)
     {
         var orderAttribute = typeSymbol.GetAttributes()

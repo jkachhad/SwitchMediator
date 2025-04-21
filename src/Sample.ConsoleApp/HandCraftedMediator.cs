@@ -10,22 +10,6 @@ namespace Mediator.Switch;
 
 #pragma warning disable CS1998
 
-public interface ISwitchMediatorServiceProvider
-{
-    T Get<T>() where T : notnull;
-}
-
-public class MicrosoftDependencyInjectionServiceProvider : ISwitchMediatorServiceProvider
-{
-    private readonly IServiceProvider _serviceProvider;
-
-    public MicrosoftDependencyInjectionServiceProvider(IServiceProvider serviceProvider) => 
-        _serviceProvider = serviceProvider;
-
-    public T Get<T>() where T : notnull => 
-        _serviceProvider.GetRequiredService<T>();
-}
-
 public class SwitchMediator2 : IMediator
 {
     #region Fields
