@@ -9,6 +9,8 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -20,22 +22,19 @@ public class SwitchMediator : IMediator
 {
     #region Fields
 
-    private readonly Tests.BasicPipelineAdapted.PingHandler _tests_BasicPipelineAdapted_PingHandler;
-    private readonly Tests.BasicPipelineAdapted.PongHandler _tests_BasicPipelineAdapted_PongHandler;
-    private readonly Tests.BasicPipelineAdapted.GenericBehavior<Tests.BasicPipelineAdapted.Ping, Tests.BasicPipelineAdapted.VersionedResponse> _tests_BasicPipelineAdapted_GenericBehavior__tests_BasicPipelineAdapted_Ping;
+    private Tests.BasicPipelineAdapted.PingHandler _tests_BasicPipelineAdapted_PingHandler;
+    private Tests.BasicPipelineAdapted.PongHandler _tests_BasicPipelineAdapted_PongHandler;
+    private Tests.BasicPipelineAdapted.GenericBehavior<Tests.BasicPipelineAdapted.Ping, Tests.BasicPipelineAdapted.VersionedResponse> _tests_BasicPipelineAdapted_GenericBehavior__tests_BasicPipelineAdapted_Ping;
+
+    private readonly ISwitchMediatorServiceProvider _svc;
 
     #endregion
 
     #region Constructor
 
-    public SwitchMediator(
-        Tests.BasicPipelineAdapted.PingHandler tests_BasicPipelineAdapted_PingHandler,
-        Tests.BasicPipelineAdapted.PongHandler tests_BasicPipelineAdapted_PongHandler,
-        Tests.BasicPipelineAdapted.GenericBehavior<Tests.BasicPipelineAdapted.Ping, Tests.BasicPipelineAdapted.VersionedResponse> tests_BasicPipelineAdapted_GenericBehavior__tests_BasicPipelineAdapted_Ping)
+    public SwitchMediator(ISwitchMediatorServiceProvider serviceProvider)
     {
-        _tests_BasicPipelineAdapted_PingHandler = tests_BasicPipelineAdapted_PingHandler;
-        _tests_BasicPipelineAdapted_PongHandler = tests_BasicPipelineAdapted_PongHandler;
-        _tests_BasicPipelineAdapted_GenericBehavior__tests_BasicPipelineAdapted_Ping = tests_BasicPipelineAdapted_GenericBehavior__tests_BasicPipelineAdapted_Ping;
+        _svc = serviceProvider;
     }
 
     #endregion
@@ -95,8 +94,8 @@ public class SwitchMediator : IMediator
         CancellationToken cancellationToken)
     {
         return
-            _tests_BasicPipelineAdapted_GenericBehavior__tests_BasicPipelineAdapted_Ping.Handle(request, () =>
-            /* Request Handler */ _tests_BasicPipelineAdapted_PingHandler.Handle(request, cancellationToken),
+            Get(ref _tests_BasicPipelineAdapted_GenericBehavior__tests_BasicPipelineAdapted_Ping).Handle(request, () =>
+            /* Request Handler */ Get(ref _tests_BasicPipelineAdapted_PingHandler).Handle(request, cancellationToken),
             cancellationToken);
     }
 
@@ -105,7 +104,14 @@ public class SwitchMediator : IMediator
         CancellationToken cancellationToken)
     {
         return
-            /* Request Handler */ _tests_BasicPipelineAdapted_PongHandler.Handle(request, cancellationToken);
+            /* Request Handler */ Get(ref _tests_BasicPipelineAdapted_PongHandler).Handle(request, cancellationToken);
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    [DebuggerStepThrough]
+    private T Get<T>(ref T? field) where T : notnull
+    {
+        return field ?? (field = _svc.Get<T>());
     }
 
     /// <summary>

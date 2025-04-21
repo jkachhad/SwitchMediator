@@ -9,6 +9,8 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -20,40 +22,25 @@ public class SwitchMediator : IMediator
 {
     #region Fields
 
-    private readonly Tests.FullPipeline.GetUserRequestHandler _tests_FullPipeline_GetUserRequestHandler;
-    private readonly Tests.FullPipeline.CreateOrderRequestHandler _tests_FullPipeline_CreateOrderRequestHandler;
-    private readonly Tests.FullPipeline.AuditBehavior<Tests.FullPipeline.GetUserRequest, string> _tests_FullPipeline_AuditBehavior__tests_FullPipeline_GetUserRequest;
-    private readonly Tests.FullPipeline.ValidationBehavior<Tests.FullPipeline.GetUserRequest, string> _tests_FullPipeline_ValidationBehavior__tests_FullPipeline_GetUserRequest;
-    private readonly Tests.FullPipeline.LoggingBehavior<Tests.FullPipeline.GetUserRequest, string> _tests_FullPipeline_LoggingBehavior__tests_FullPipeline_GetUserRequest;
-    private readonly Tests.FullPipeline.TransactionBehavior<Tests.FullPipeline.CreateOrderRequest, int> _tests_FullPipeline_TransactionBehavior__tests_FullPipeline_CreateOrderRequest;
-    private readonly Tests.FullPipeline.ValidationBehavior<Tests.FullPipeline.CreateOrderRequest, int> _tests_FullPipeline_ValidationBehavior__tests_FullPipeline_CreateOrderRequest;
-    private readonly Tests.FullPipeline.LoggingBehavior<Tests.FullPipeline.CreateOrderRequest, int> _tests_FullPipeline_LoggingBehavior__tests_FullPipeline_CreateOrderRequest;
-    private readonly IEnumerable<INotificationHandler<Tests.FullPipeline.UserLoggedInEvent>> _tests_FullPipeline_UserLoggedInEvent__Handlers;
+    private Tests.FullPipeline.GetUserRequestHandler _tests_FullPipeline_GetUserRequestHandler;
+    private Tests.FullPipeline.CreateOrderRequestHandler _tests_FullPipeline_CreateOrderRequestHandler;
+    private Tests.FullPipeline.AuditBehavior<Tests.FullPipeline.GetUserRequest, string> _tests_FullPipeline_AuditBehavior__tests_FullPipeline_GetUserRequest;
+    private Tests.FullPipeline.ValidationBehavior<Tests.FullPipeline.GetUserRequest, string> _tests_FullPipeline_ValidationBehavior__tests_FullPipeline_GetUserRequest;
+    private Tests.FullPipeline.LoggingBehavior<Tests.FullPipeline.GetUserRequest, string> _tests_FullPipeline_LoggingBehavior__tests_FullPipeline_GetUserRequest;
+    private Tests.FullPipeline.TransactionBehavior<Tests.FullPipeline.CreateOrderRequest, int> _tests_FullPipeline_TransactionBehavior__tests_FullPipeline_CreateOrderRequest;
+    private Tests.FullPipeline.ValidationBehavior<Tests.FullPipeline.CreateOrderRequest, int> _tests_FullPipeline_ValidationBehavior__tests_FullPipeline_CreateOrderRequest;
+    private Tests.FullPipeline.LoggingBehavior<Tests.FullPipeline.CreateOrderRequest, int> _tests_FullPipeline_LoggingBehavior__tests_FullPipeline_CreateOrderRequest;
+    private IEnumerable<INotificationHandler<Tests.FullPipeline.UserLoggedInEvent>> _tests_FullPipeline_UserLoggedInEvent__Handlers;
+
+    private readonly ISwitchMediatorServiceProvider _svc;
 
     #endregion
 
     #region Constructor
 
-    public SwitchMediator(
-        Tests.FullPipeline.GetUserRequestHandler tests_FullPipeline_GetUserRequestHandler,
-        Tests.FullPipeline.CreateOrderRequestHandler tests_FullPipeline_CreateOrderRequestHandler,
-        Tests.FullPipeline.AuditBehavior<Tests.FullPipeline.GetUserRequest, string> tests_FullPipeline_AuditBehavior__tests_FullPipeline_GetUserRequest,
-        Tests.FullPipeline.ValidationBehavior<Tests.FullPipeline.GetUserRequest, string> tests_FullPipeline_ValidationBehavior__tests_FullPipeline_GetUserRequest,
-        Tests.FullPipeline.LoggingBehavior<Tests.FullPipeline.GetUserRequest, string> tests_FullPipeline_LoggingBehavior__tests_FullPipeline_GetUserRequest,
-        Tests.FullPipeline.TransactionBehavior<Tests.FullPipeline.CreateOrderRequest, int> tests_FullPipeline_TransactionBehavior__tests_FullPipeline_CreateOrderRequest,
-        Tests.FullPipeline.ValidationBehavior<Tests.FullPipeline.CreateOrderRequest, int> tests_FullPipeline_ValidationBehavior__tests_FullPipeline_CreateOrderRequest,
-        Tests.FullPipeline.LoggingBehavior<Tests.FullPipeline.CreateOrderRequest, int> tests_FullPipeline_LoggingBehavior__tests_FullPipeline_CreateOrderRequest,
-        IEnumerable<INotificationHandler<Tests.FullPipeline.UserLoggedInEvent>> tests_FullPipeline_UserLoggedInEvent__Handlers)
+    public SwitchMediator(ISwitchMediatorServiceProvider serviceProvider)
     {
-        _tests_FullPipeline_GetUserRequestHandler = tests_FullPipeline_GetUserRequestHandler;
-        _tests_FullPipeline_CreateOrderRequestHandler = tests_FullPipeline_CreateOrderRequestHandler;
-        _tests_FullPipeline_AuditBehavior__tests_FullPipeline_GetUserRequest = tests_FullPipeline_AuditBehavior__tests_FullPipeline_GetUserRequest;
-        _tests_FullPipeline_ValidationBehavior__tests_FullPipeline_GetUserRequest = tests_FullPipeline_ValidationBehavior__tests_FullPipeline_GetUserRequest;
-        _tests_FullPipeline_LoggingBehavior__tests_FullPipeline_GetUserRequest = tests_FullPipeline_LoggingBehavior__tests_FullPipeline_GetUserRequest;
-        _tests_FullPipeline_TransactionBehavior__tests_FullPipeline_CreateOrderRequest = tests_FullPipeline_TransactionBehavior__tests_FullPipeline_CreateOrderRequest;
-        _tests_FullPipeline_ValidationBehavior__tests_FullPipeline_CreateOrderRequest = tests_FullPipeline_ValidationBehavior__tests_FullPipeline_CreateOrderRequest;
-        _tests_FullPipeline_LoggingBehavior__tests_FullPipeline_CreateOrderRequest = tests_FullPipeline_LoggingBehavior__tests_FullPipeline_CreateOrderRequest;
-        _tests_FullPipeline_UserLoggedInEvent__Handlers = tests_FullPipeline_UserLoggedInEvent__Handlers;
+        _svc = serviceProvider;
     }
 
     #endregion
@@ -107,7 +94,7 @@ public class SwitchMediator : IMediator
             { // case Tests.FullPipeline.UserLoggedInEvent:
                 typeof(Tests.FullPipeline.UserLoggedInEvent), async (instance, notification, cancellationToken) =>
                 {
-                    foreach (var handler in instance._tests_FullPipeline_UserLoggedInEvent__Handlers)
+                    foreach (var handler in instance.Get(ref instance._tests_FullPipeline_UserLoggedInEvent__Handlers))
                     {
                         await handler.Handle((Tests.FullPipeline.UserLoggedInEvent)notification, cancellationToken);
                     }
@@ -121,10 +108,10 @@ public class SwitchMediator : IMediator
         CancellationToken cancellationToken)
     {
         return
-            _tests_FullPipeline_LoggingBehavior__tests_FullPipeline_GetUserRequest.Handle(request, () =>
-            _tests_FullPipeline_ValidationBehavior__tests_FullPipeline_GetUserRequest.Handle(request, () =>
-            _tests_FullPipeline_AuditBehavior__tests_FullPipeline_GetUserRequest.Handle(request, () =>
-            /* Request Handler */ _tests_FullPipeline_GetUserRequestHandler.Handle(request, cancellationToken),
+            Get(ref _tests_FullPipeline_LoggingBehavior__tests_FullPipeline_GetUserRequest).Handle(request, () =>
+            Get(ref _tests_FullPipeline_ValidationBehavior__tests_FullPipeline_GetUserRequest).Handle(request, () =>
+            Get(ref _tests_FullPipeline_AuditBehavior__tests_FullPipeline_GetUserRequest).Handle(request, () =>
+            /* Request Handler */ Get(ref _tests_FullPipeline_GetUserRequestHandler).Handle(request, cancellationToken),
             cancellationToken),
             cancellationToken),
             cancellationToken);
@@ -135,13 +122,20 @@ public class SwitchMediator : IMediator
         CancellationToken cancellationToken)
     {
         return
-            _tests_FullPipeline_LoggingBehavior__tests_FullPipeline_CreateOrderRequest.Handle(request, () =>
-            _tests_FullPipeline_ValidationBehavior__tests_FullPipeline_CreateOrderRequest.Handle(request, () =>
-            _tests_FullPipeline_TransactionBehavior__tests_FullPipeline_CreateOrderRequest.Handle(request, () =>
-            /* Request Handler */ _tests_FullPipeline_CreateOrderRequestHandler.Handle(request, cancellationToken),
+            Get(ref _tests_FullPipeline_LoggingBehavior__tests_FullPipeline_CreateOrderRequest).Handle(request, () =>
+            Get(ref _tests_FullPipeline_ValidationBehavior__tests_FullPipeline_CreateOrderRequest).Handle(request, () =>
+            Get(ref _tests_FullPipeline_TransactionBehavior__tests_FullPipeline_CreateOrderRequest).Handle(request, () =>
+            /* Request Handler */ Get(ref _tests_FullPipeline_CreateOrderRequestHandler).Handle(request, cancellationToken),
             cancellationToken),
             cancellationToken),
             cancellationToken);
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    [DebuggerStepThrough]
+    private T Get<T>(ref T? field) where T : notnull
+    {
+        return field ?? (field = _svc.Get<T>());
     }
 
     /// <summary>

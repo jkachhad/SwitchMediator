@@ -1,4 +1,3 @@
-using System.Linq.Expressions;
 using System.Reflection;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -54,6 +53,8 @@ public static class ServiceCollectionExtensions
         var options = new SwitchMediatorOptions();
 
         configure?.Invoke(options);
+
+        services.Add(new ServiceDescriptor(typeof(ISwitchMediatorServiceProvider), typeof(MicrosoftDependencyInjectionServiceProvider), options.ServiceLifetime));
 
         services.Add(new ServiceDescriptor(typeof(IMediator), typeof(TSwitchMediator), options.ServiceLifetime));
         services.Add(new ServiceDescriptor(typeof(ISender), sp => sp.GetRequiredService<IMediator>(), options.ServiceLifetime));
@@ -116,8 +117,6 @@ public static class ServiceCollectionExtensions
         foreach (var handlerType in requestHandlerTypes)
         {
             services.TryAdd(new ServiceDescriptor(handlerType, handlerType, options.ServiceLifetime));
-            services.TryAdd(new ServiceDescriptor(typeof(Lazy<>).MakeGenericType(handlerType),
-                BuildLazyFactoryDelegate(handlerType), options.ServiceLifetime));
         }
     }
 
@@ -192,65 +191,12 @@ public static class ServiceCollectionExtensions
             sp => handlerTypes.Select(handlerType => GetNotificationHandler(sp, handlerType)),
             serviceLifetime));
         
-        services.TryAdd(new ServiceDescriptor(
-            typeof(IEnumerable<Lazy<INotificationHandler<TNotification>>>),
-            sp => handlerTypes.Select(handlerType => 
-                new Lazy<INotificationHandler<TNotification>>(() => GetNotificationHandler(sp, handlerType))),
-            serviceLifetime));
-        
         return;
 
         static INotificationHandler<TNotification> GetNotificationHandler(IServiceProvider sp, Type handlerType) => 
             (INotificationHandler<TNotification>) sp.GetRequiredService(handlerType);
     }
-
-    private static Func<IServiceProvider, object> BuildLazyFactoryDelegate(Type serviceType)
-    {
-        // Expression Tree: sp => new Lazy<serviceType>(() => sp.GetRequiredService<serviceType>())
-
-        // 1. Define IServiceProvider parameter
-        var spParam = Expression.Parameter(typeof(IServiceProvider), "sp");
-
-        // 2. Get the MethodInfo for sp.GetRequiredService<T>
-        var getRequiredServiceMethodInfo = typeof(ServiceProviderServiceExtensions).GetMethod(
-            nameof(ServiceProviderServiceExtensions.GetRequiredService),
-            [typeof(IServiceProvider)] // Specify overload taking IServiceProvider
-        );
-
-        if (getRequiredServiceMethodInfo == null)
-            throw new InvalidOperationException("Could not find GetRequiredService method.");
-
-        // 3. Make it generic for the specific serviceType: GetRequiredService<serviceType>
-        var genericGetRequiredServiceMethod = getRequiredServiceMethodInfo.MakeGenericMethod(serviceType);
-
-        // 4. Create the call expression: sp.GetRequiredService<serviceType>()
-        var getServiceCall = Expression.Call(null, genericGetRequiredServiceMethod, spParam); // Static method call
-
-        // 5. Create the inner lambda: () => sp.GetRequiredService<serviceType>()
-        //    The delegate type Func<serviceType> is inferred.
-        var innerLambda = Expression.Lambda(getServiceCall);
-
-        // 6. Get the constructor for Lazy<serviceType>(Func<serviceType> factory)
-        var lazyType = typeof(Lazy<>).MakeGenericType(serviceType);
-        var lazyConstructor = lazyType.GetConstructor([innerLambda.Type]); // Get constructor matching Func<T>
-
-        if (lazyConstructor == null)
-            throw new InvalidOperationException($"Could not find constructor for Lazy<{serviceType.Name}> that accepts a factory delegate.");
-
-        // 7. Create the 'new Lazy<serviceType>(innerLambda)' expression
-        var lazyCreation = Expression.New(lazyConstructor, innerLambda);
-
-        // 8. Create the outer lambda: sp => (object)new Lazy<serviceType>(...)
-        //    The result needs to be object type for the ServiceDescriptor factory.
-        var outerLambda = Expression.Lambda<Func<IServiceProvider, object>>(
-            Expression.Convert(lazyCreation, typeof(object)), // Convert Lazy<T> to object
-            spParam
-        );
-
-        // 9. Compile the expression tree into a delegate
-        return outerLambda.Compile();
-    }
-
+    
     private static void Sort(Type[] typesToSort, Type[] specificOrder)
     {
         if (specificOrder.Length == 0)

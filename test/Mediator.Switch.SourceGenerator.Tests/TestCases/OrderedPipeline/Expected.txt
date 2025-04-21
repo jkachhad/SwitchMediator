@@ -9,6 +9,8 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -20,25 +22,20 @@ public class SwitchMediator : IMediator
 {
     #region Fields
 
-    private readonly Tests.OrderedPipeline.CalculationRequestHandler _tests_OrderedPipeline_CalculationRequestHandler;
-    private readonly Tests.OrderedPipeline.MonitoringBehavior<Tests.OrderedPipeline.CalculationRequest, int> _tests_OrderedPipeline_MonitoringBehavior__tests_OrderedPipeline_CalculationRequest;
-    private readonly Tests.OrderedPipeline.ValidationBehavior<Tests.OrderedPipeline.CalculationRequest, int> _tests_OrderedPipeline_ValidationBehavior__tests_OrderedPipeline_CalculationRequest;
-    private readonly Tests.OrderedPipeline.LoggingBehavior<Tests.OrderedPipeline.CalculationRequest, int> _tests_OrderedPipeline_LoggingBehavior__tests_OrderedPipeline_CalculationRequest;
+    private Tests.OrderedPipeline.CalculationRequestHandler _tests_OrderedPipeline_CalculationRequestHandler;
+    private Tests.OrderedPipeline.MonitoringBehavior<Tests.OrderedPipeline.CalculationRequest, int> _tests_OrderedPipeline_MonitoringBehavior__tests_OrderedPipeline_CalculationRequest;
+    private Tests.OrderedPipeline.ValidationBehavior<Tests.OrderedPipeline.CalculationRequest, int> _tests_OrderedPipeline_ValidationBehavior__tests_OrderedPipeline_CalculationRequest;
+    private Tests.OrderedPipeline.LoggingBehavior<Tests.OrderedPipeline.CalculationRequest, int> _tests_OrderedPipeline_LoggingBehavior__tests_OrderedPipeline_CalculationRequest;
+
+    private readonly ISwitchMediatorServiceProvider _svc;
 
     #endregion
 
     #region Constructor
 
-    public SwitchMediator(
-        Tests.OrderedPipeline.CalculationRequestHandler tests_OrderedPipeline_CalculationRequestHandler,
-        Tests.OrderedPipeline.MonitoringBehavior<Tests.OrderedPipeline.CalculationRequest, int> tests_OrderedPipeline_MonitoringBehavior__tests_OrderedPipeline_CalculationRequest,
-        Tests.OrderedPipeline.ValidationBehavior<Tests.OrderedPipeline.CalculationRequest, int> tests_OrderedPipeline_ValidationBehavior__tests_OrderedPipeline_CalculationRequest,
-        Tests.OrderedPipeline.LoggingBehavior<Tests.OrderedPipeline.CalculationRequest, int> tests_OrderedPipeline_LoggingBehavior__tests_OrderedPipeline_CalculationRequest)
+    public SwitchMediator(ISwitchMediatorServiceProvider serviceProvider)
     {
-        _tests_OrderedPipeline_CalculationRequestHandler = tests_OrderedPipeline_CalculationRequestHandler;
-        _tests_OrderedPipeline_MonitoringBehavior__tests_OrderedPipeline_CalculationRequest = tests_OrderedPipeline_MonitoringBehavior__tests_OrderedPipeline_CalculationRequest;
-        _tests_OrderedPipeline_ValidationBehavior__tests_OrderedPipeline_CalculationRequest = tests_OrderedPipeline_ValidationBehavior__tests_OrderedPipeline_CalculationRequest;
-        _tests_OrderedPipeline_LoggingBehavior__tests_OrderedPipeline_CalculationRequest = tests_OrderedPipeline_LoggingBehavior__tests_OrderedPipeline_CalculationRequest;
+        _svc = serviceProvider;
     }
 
     #endregion
@@ -93,13 +90,20 @@ public class SwitchMediator : IMediator
         CancellationToken cancellationToken)
     {
         return
-            _tests_OrderedPipeline_LoggingBehavior__tests_OrderedPipeline_CalculationRequest.Handle(request, () =>
-            _tests_OrderedPipeline_ValidationBehavior__tests_OrderedPipeline_CalculationRequest.Handle(request, () =>
-            _tests_OrderedPipeline_MonitoringBehavior__tests_OrderedPipeline_CalculationRequest.Handle(request, () =>
-            /* Request Handler */ _tests_OrderedPipeline_CalculationRequestHandler.Handle(request, cancellationToken),
+            Get(ref _tests_OrderedPipeline_LoggingBehavior__tests_OrderedPipeline_CalculationRequest).Handle(request, () =>
+            Get(ref _tests_OrderedPipeline_ValidationBehavior__tests_OrderedPipeline_CalculationRequest).Handle(request, () =>
+            Get(ref _tests_OrderedPipeline_MonitoringBehavior__tests_OrderedPipeline_CalculationRequest).Handle(request, () =>
+            /* Request Handler */ Get(ref _tests_OrderedPipeline_CalculationRequestHandler).Handle(request, cancellationToken),
             cancellationToken),
             cancellationToken),
             cancellationToken);
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    [DebuggerStepThrough]
+    private T Get<T>(ref T? field) where T : notnull
+    {
+        return field ?? (field = _svc.Get<T>());
     }
 
     /// <summary>

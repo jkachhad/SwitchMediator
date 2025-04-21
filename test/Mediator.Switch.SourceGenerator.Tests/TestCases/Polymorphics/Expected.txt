@@ -9,6 +9,8 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -20,34 +22,23 @@ public class SwitchMediator : IMediator
 {
     #region Fields
 
-    private readonly Tests.Polymorphics.DogRequestHandler _tests_Polymorphics_DogRequestHandler;
-    private readonly Tests.Polymorphics.CatRequestHandler _tests_Polymorphics_CatRequestHandler;
-    private readonly Tests.Polymorphics.GenericAnimalRequestHandler _tests_Polymorphics_GenericAnimalRequestHandler;
-    private readonly Tests.Polymorphics.CarRequestHandler _tests_Polymorphics_CarRequestHandler;
-    private readonly Tests.Polymorphics.VehicleRequestHandler _tests_Polymorphics_VehicleRequestHandler;
-    private readonly IEnumerable<INotificationHandler<Tests.Polymorphics.UserCreatedEvent>> _tests_Polymorphics_UserCreatedEvent__Handlers;
-    private readonly IEnumerable<INotificationHandler<Tests.Polymorphics.OrderPlacedEvent>> _tests_Polymorphics_OrderPlacedEvent__Handlers;
+    private Tests.Polymorphics.DogRequestHandler _tests_Polymorphics_DogRequestHandler;
+    private Tests.Polymorphics.CatRequestHandler _tests_Polymorphics_CatRequestHandler;
+    private Tests.Polymorphics.GenericAnimalRequestHandler _tests_Polymorphics_GenericAnimalRequestHandler;
+    private Tests.Polymorphics.CarRequestHandler _tests_Polymorphics_CarRequestHandler;
+    private Tests.Polymorphics.VehicleRequestHandler _tests_Polymorphics_VehicleRequestHandler;
+    private IEnumerable<INotificationHandler<Tests.Polymorphics.UserCreatedEvent>> _tests_Polymorphics_UserCreatedEvent__Handlers;
+    private IEnumerable<INotificationHandler<Tests.Polymorphics.OrderPlacedEvent>> _tests_Polymorphics_OrderPlacedEvent__Handlers;
+
+    private readonly ISwitchMediatorServiceProvider _svc;
 
     #endregion
 
     #region Constructor
 
-    public SwitchMediator(
-        Tests.Polymorphics.DogRequestHandler tests_Polymorphics_DogRequestHandler,
-        Tests.Polymorphics.CatRequestHandler tests_Polymorphics_CatRequestHandler,
-        Tests.Polymorphics.GenericAnimalRequestHandler tests_Polymorphics_GenericAnimalRequestHandler,
-        Tests.Polymorphics.CarRequestHandler tests_Polymorphics_CarRequestHandler,
-        Tests.Polymorphics.VehicleRequestHandler tests_Polymorphics_VehicleRequestHandler,
-        IEnumerable<INotificationHandler<Tests.Polymorphics.UserCreatedEvent>> tests_Polymorphics_UserCreatedEvent__Handlers,
-        IEnumerable<INotificationHandler<Tests.Polymorphics.OrderPlacedEvent>> tests_Polymorphics_OrderPlacedEvent__Handlers)
+    public SwitchMediator(ISwitchMediatorServiceProvider serviceProvider)
     {
-        _tests_Polymorphics_DogRequestHandler = tests_Polymorphics_DogRequestHandler;
-        _tests_Polymorphics_CatRequestHandler = tests_Polymorphics_CatRequestHandler;
-        _tests_Polymorphics_GenericAnimalRequestHandler = tests_Polymorphics_GenericAnimalRequestHandler;
-        _tests_Polymorphics_CarRequestHandler = tests_Polymorphics_CarRequestHandler;
-        _tests_Polymorphics_VehicleRequestHandler = tests_Polymorphics_VehicleRequestHandler;
-        _tests_Polymorphics_UserCreatedEvent__Handlers = tests_Polymorphics_UserCreatedEvent__Handlers;
-        _tests_Polymorphics_OrderPlacedEvent__Handlers = tests_Polymorphics_OrderPlacedEvent__Handlers;
+        _svc = serviceProvider;
     }
 
     #endregion
@@ -121,7 +112,7 @@ public class SwitchMediator : IMediator
             { // case Tests.Polymorphics.OrderPlacedEvent:
                 typeof(Tests.Polymorphics.OrderPlacedEvent), async (instance, notification, cancellationToken) =>
                 {
-                    foreach (var handler in instance._tests_Polymorphics_OrderPlacedEvent__Handlers)
+                    foreach (var handler in instance.Get(ref instance._tests_Polymorphics_OrderPlacedEvent__Handlers))
                     {
                         await handler.Handle((Tests.Polymorphics.OrderPlacedEvent)notification, cancellationToken);
                     }
@@ -130,7 +121,7 @@ public class SwitchMediator : IMediator
             { // case Tests.Polymorphics.UserCreatedEvent:
                 typeof(Tests.Polymorphics.UserCreatedEvent), async (instance, notification, cancellationToken) =>
                 {
-                    foreach (var handler in instance._tests_Polymorphics_UserCreatedEvent__Handlers)
+                    foreach (var handler in instance.Get(ref instance._tests_Polymorphics_UserCreatedEvent__Handlers))
                     {
                         await handler.Handle((Tests.Polymorphics.UserCreatedEvent)notification, cancellationToken);
                     }
@@ -144,7 +135,7 @@ public class SwitchMediator : IMediator
         CancellationToken cancellationToken)
     {
         return
-            /* Request Handler */ _tests_Polymorphics_GenericAnimalRequestHandler.Handle(request, cancellationToken);
+            /* Request Handler */ Get(ref _tests_Polymorphics_GenericAnimalRequestHandler).Handle(request, cancellationToken);
     }
 
     private Task<string> Handle_Tests_Polymorphics_DogRequest(
@@ -152,7 +143,7 @@ public class SwitchMediator : IMediator
         CancellationToken cancellationToken)
     {
         return
-            /* Request Handler */ _tests_Polymorphics_DogRequestHandler.Handle(request, cancellationToken);
+            /* Request Handler */ Get(ref _tests_Polymorphics_DogRequestHandler).Handle(request, cancellationToken);
     }
 
     private Task<string> Handle_Tests_Polymorphics_CatRequest(
@@ -160,7 +151,7 @@ public class SwitchMediator : IMediator
         CancellationToken cancellationToken)
     {
         return
-            /* Request Handler */ _tests_Polymorphics_CatRequestHandler.Handle(request, cancellationToken);
+            /* Request Handler */ Get(ref _tests_Polymorphics_CatRequestHandler).Handle(request, cancellationToken);
     }
 
     private Task<double> Handle_Tests_Polymorphics_VehicleRequest(
@@ -168,7 +159,7 @@ public class SwitchMediator : IMediator
         CancellationToken cancellationToken)
     {
         return
-            /* Request Handler */ _tests_Polymorphics_VehicleRequestHandler.Handle(request, cancellationToken);
+            /* Request Handler */ Get(ref _tests_Polymorphics_VehicleRequestHandler).Handle(request, cancellationToken);
     }
 
     private Task<double> Handle_Tests_Polymorphics_CarRequest(
@@ -176,7 +167,14 @@ public class SwitchMediator : IMediator
         CancellationToken cancellationToken)
     {
         return
-            /* Request Handler */ _tests_Polymorphics_CarRequestHandler.Handle(request, cancellationToken);
+            /* Request Handler */ Get(ref _tests_Polymorphics_CarRequestHandler).Handle(request, cancellationToken);
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    [DebuggerStepThrough]
+    private T Get<T>(ref T? field) where T : notnull
+    {
+        return field ?? (field = _svc.Get<T>());
     }
 
     /// <summary>

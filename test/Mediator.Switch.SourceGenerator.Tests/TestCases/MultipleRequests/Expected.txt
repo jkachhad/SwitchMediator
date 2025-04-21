@@ -9,6 +9,8 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -20,19 +22,18 @@ public class SwitchMediator : IMediator
 {
     #region Fields
 
-    private readonly Tests.MultipleRequests.GetProductRequestHandler _tests_MultipleRequests_GetProductRequestHandler;
-    private readonly Tests.MultipleRequests.GetInventoryRequestHandler _tests_MultipleRequests_GetInventoryRequestHandler;
+    private Tests.MultipleRequests.GetProductRequestHandler _tests_MultipleRequests_GetProductRequestHandler;
+    private Tests.MultipleRequests.GetInventoryRequestHandler _tests_MultipleRequests_GetInventoryRequestHandler;
+
+    private readonly ISwitchMediatorServiceProvider _svc;
 
     #endregion
 
     #region Constructor
 
-    public SwitchMediator(
-        Tests.MultipleRequests.GetProductRequestHandler tests_MultipleRequests_GetProductRequestHandler,
-        Tests.MultipleRequests.GetInventoryRequestHandler tests_MultipleRequests_GetInventoryRequestHandler)
+    public SwitchMediator(ISwitchMediatorServiceProvider serviceProvider)
     {
-        _tests_MultipleRequests_GetProductRequestHandler = tests_MultipleRequests_GetProductRequestHandler;
-        _tests_MultipleRequests_GetInventoryRequestHandler = tests_MultipleRequests_GetInventoryRequestHandler;
+        _svc = serviceProvider;
     }
 
     #endregion
@@ -92,7 +93,7 @@ public class SwitchMediator : IMediator
         CancellationToken cancellationToken)
     {
         return
-            /* Request Handler */ _tests_MultipleRequests_GetProductRequestHandler.Handle(request, cancellationToken);
+            /* Request Handler */ Get(ref _tests_MultipleRequests_GetProductRequestHandler).Handle(request, cancellationToken);
     }
 
     private Task<int> Handle_Tests_MultipleRequests_GetInventoryRequest(
@@ -100,7 +101,14 @@ public class SwitchMediator : IMediator
         CancellationToken cancellationToken)
     {
         return
-            /* Request Handler */ _tests_MultipleRequests_GetInventoryRequestHandler.Handle(request, cancellationToken);
+            /* Request Handler */ Get(ref _tests_MultipleRequests_GetInventoryRequestHandler).Handle(request, cancellationToken);
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    [DebuggerStepThrough]
+    private T Get<T>(ref T? field) where T : notnull
+    {
+        return field ?? (field = _svc.Get<T>());
     }
 
     /// <summary>

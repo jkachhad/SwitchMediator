@@ -11,21 +11,19 @@ public static class Program
     {
         var services = new ServiceCollection()
             .AddValidatorsFromAssembly(typeof(Program).Assembly)
-            
+
             // Register SwitchMediator
-            .AddMediator<SwitchMediator2>(op =>
+            .AddMediator<SwitchMediator>(op =>
             {
-                op.KnownTypes = SwitchMediator2.KnownTypes;
+                op.KnownTypes = SwitchMediator.KnownTypes;
                 op.ServiceLifetime = ServiceLifetime.Singleton;
                 op.OrderNotificationHandlers<UserLoggedInEvent>(
                     typeof(UserLoggedInLogger)
                     // any other types not specified above is assumed to have lower priority
                     // e.g., typeof(UserLoggedInAnalytics)
                 );
-            })
+            });
             
-            .AddScoped<ISwitchMediatorServiceProvider, MicrosoftDependencyInjectionServiceProvider>();
-
         var serviceProvider = services.BuildServiceProvider();
 
         using var scope = serviceProvider.CreateScope();

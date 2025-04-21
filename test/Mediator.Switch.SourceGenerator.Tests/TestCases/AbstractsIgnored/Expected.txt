@@ -9,6 +9,8 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -22,14 +24,15 @@ public class SwitchMediator : IMediator
 
 
 
+    private readonly ISwitchMediatorServiceProvider _svc;
+
     #endregion
 
     #region Constructor
 
-    public SwitchMediator(
-        )
+    public SwitchMediator(ISwitchMediatorServiceProvider serviceProvider)
     {
-
+        _svc = serviceProvider;
     }
 
     #endregion
@@ -76,6 +79,13 @@ public class SwitchMediator : IMediator
     }
 
 
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    [DebuggerStepThrough]
+    private T Get<T>(ref T? field) where T : notnull
+    {
+        return field ?? (field = _svc.Get<T>());
+    }
 
     /// <summary>
     /// Provides lists of SwitchMediator component implementation types.
