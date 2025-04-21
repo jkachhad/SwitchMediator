@@ -7,6 +7,8 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
+#nullable enable
+
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -16,17 +18,17 @@ using System.Threading.Tasks;
 
 namespace Mediator.Switch;
 
-#pragma warning disable CS1998
+#pragma warning disable CS1998, CS0169
 
 public class SwitchMediator : IMediator
 {
     #region Fields
 
-    private Tests.ConstrainedPipeline.SpecialProcessRequestHandler _tests_ConstrainedPipeline_SpecialProcessRequestHandler;
-    private Tests.ConstrainedPipeline.NormalRequestHandler _tests_ConstrainedPipeline_NormalRequestHandler;
-    private Tests.ConstrainedPipeline.GenericLoggingBehavior<Tests.ConstrainedPipeline.SpecialProcessRequest, System.Guid> _tests_ConstrainedPipeline_GenericLoggingBehavior__tests_ConstrainedPipeline_SpecialProcessRequest;
-    private Tests.ConstrainedPipeline.SpecialProcessingBehavior<Tests.ConstrainedPipeline.SpecialProcessRequest, System.Guid> _tests_ConstrainedPipeline_SpecialProcessingBehavior__tests_ConstrainedPipeline_SpecialProcessRequest;
-    private Tests.ConstrainedPipeline.GenericLoggingBehavior<Tests.ConstrainedPipeline.NormalRequest, int> _tests_ConstrainedPipeline_GenericLoggingBehavior__tests_ConstrainedPipeline_NormalRequest;
+    private Tests.ConstrainedPipeline.SpecialProcessRequestHandler? _tests_ConstrainedPipeline_SpecialProcessRequestHandler;
+    private Tests.ConstrainedPipeline.NormalRequestHandler? _tests_ConstrainedPipeline_NormalRequestHandler;
+    private Tests.ConstrainedPipeline.GenericLoggingBehavior<Tests.ConstrainedPipeline.SpecialProcessRequest, System.Guid>? _tests_ConstrainedPipeline_GenericLoggingBehavior__tests_ConstrainedPipeline_SpecialProcessRequest;
+    private Tests.ConstrainedPipeline.SpecialProcessingBehavior<Tests.ConstrainedPipeline.SpecialProcessRequest, System.Guid>? _tests_ConstrainedPipeline_SpecialProcessingBehavior__tests_ConstrainedPipeline_SpecialProcessRequest;
+    private Tests.ConstrainedPipeline.GenericLoggingBehavior<Tests.ConstrainedPipeline.NormalRequest, int>? _tests_ConstrainedPipeline_GenericLoggingBehavior__tests_ConstrainedPipeline_NormalRequest;
 
     private readonly ISwitchMediatorServiceProvider _svc;
 
