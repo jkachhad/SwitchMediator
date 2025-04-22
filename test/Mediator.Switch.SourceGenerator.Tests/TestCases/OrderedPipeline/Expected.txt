@@ -125,9 +125,9 @@ public class SwitchMediator : IMediator
 
         public static readonly IReadOnlyList<Type> PipelineBehaviorTypes =
            new Type[] {
-                typeof(Tests.OrderedPipeline.ValidationBehavior<,>),
-                typeof(Tests.OrderedPipeline.LoggingBehavior<,>),
-                typeof(Tests.OrderedPipeline.MonitoringBehavior<,>)
+                typeof(Tests.OrderedPipeline.MonitoringBehavior<Tests.OrderedPipeline.CalculationRequest, int>),
+                typeof(Tests.OrderedPipeline.ValidationBehavior<Tests.OrderedPipeline.CalculationRequest, int>),
+                typeof(Tests.OrderedPipeline.LoggingBehavior<Tests.OrderedPipeline.CalculationRequest, int>)
            }.AsReadOnly();
     }
 }
