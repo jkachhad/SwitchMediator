@@ -52,7 +52,12 @@ public static class CodeGenerator
             $"(typeof({n}), new Type[] {{\n                    {string.Join(",\n                    ", notificationHandlers
                 .Where(h => h.TNotification.Equals(n, SymbolEqualityComparer.Default))
                 .Select(h => $"typeof({h.Class})"))}\n                }})");
-        var pipelineBehaviorTypes = behaviors.Select(b => $"typeof({b.Class.ToString().DropGenerics()}<,>)");
+        var pipelineBehaviorTypes = requestBehaviors.SelectMany(r =>
+        {
+            var (request, applicableBehaviors) = r;
+            return applicableBehaviors.Select(b =>
+                $"typeof({b.Class.ToString().DropGenerics()}<{request.Class}, {b.TResponse}>)");
+        });
 
         // Generate the complete SwitchMediator class
         return Normalize(
