@@ -134,7 +134,7 @@ public class SwitchMediator : IMediator
 
         public static readonly IReadOnlyList<Type> PipelineBehaviorTypes =
            new Type[] {
-                typeof(Tests.BasicPipelineAdapted.GenericBehavior<,>)
+                typeof(Tests.BasicPipelineAdapted.GenericBehavior<Tests.BasicPipelineAdapted.Ping, Tests.BasicPipelineAdapted.VersionedResponse>)
            }.AsReadOnly();
     }
 }
