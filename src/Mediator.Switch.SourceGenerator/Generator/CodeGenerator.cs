@@ -25,7 +25,7 @@ public static class CodeGenerator
             return applicableBehaviors.Select(b =>
                 $"private {b.Class.ToString().DropGenerics()}<{request.Class}, {b.TResponse}>? _{b.Class.GetVariableName()}__{request.Class.GetVariableName()};");
         });
-        
+
         var notificationHandlerFields = notifications.Select(n =>
             $"private IEnumerable<INotificationHandler<{n}>>? _{n.GetVariableName()}__Handlers;");
 
@@ -45,10 +45,10 @@ public static class CodeGenerator
             .OrderBy(n => n, new TypeHierarchyComparer(iRequestType, notifications.Select(n => n)))
             .Select(n => TryGeneratePublishCase(iNotificationType, notificationHandlers, n))
             .Where(c => c != null);
-        
+
         // Generate known types
         var requestHandlerTypes = handlers.Select(h => $"typeof({h.Class})");
-        var notificationTypes = notifications.Select(n => 
+        var notificationTypes = notifications.Select(n =>
             $"(typeof({n}), new Type[] {{\n                    {string.Join(",\n                    ", notificationHandlers
                 .Where(h => h.TNotification.Equals(n, SymbolEqualityComparer.Default))
                 .Select(h => $"typeof({h.Class})"))}\n                }})");
@@ -83,31 +83,31 @@ public static class CodeGenerator
                namespace Mediator.Switch;
                
                #pragma warning disable CS1998, CS0169
-
+               
                public class SwitchMediator : IMediator
                {
                    #region Fields
-                   
+               
                    {{string.Join("\n    ", handlerFields.Concat(behaviorFields).Concat(notificationHandlerFields))}}
-                   
+               
                    private readonly ISwitchMediatorServiceProvider _svc;
                
                    #endregion
                
                    #region Constructor
-                   
+               
                    public SwitchMediator(ISwitchMediatorServiceProvider serviceProvider)
                    {
                        _svc = serviceProvider;
                    }
-                   
+               
                    #endregion
-
+               
                    public static (IReadOnlyList<Type> RequestHandlerTypes, IReadOnlyList<(Type NotificationType, IReadOnlyList<Type> HandlerTypes)> NotificationTypes, IReadOnlyList<Type> PipelineBehaviorTypes) KnownTypes
                    {
                        get { return (SwitchMediatorKnownTypes.RequestHandlerTypes, SwitchMediatorKnownTypes.NotificationTypes, SwitchMediatorKnownTypes.PipelineBehaviorTypes); }
                    }
-                
+               
                    public Task<TResponse> Send<TResponse>(IRequest<TResponse> request, CancellationToken cancellationToken = default)
                    {
                        if (SendSwitchCase.Cases.TryGetValue(request.GetType(), out var handle))
@@ -117,7 +117,7 @@ public static class CodeGenerator
                        
                        throw new ArgumentException($"No handler for {request.GetType().Name}");
                    }
-                   
+               
                    private static class SendSwitchCase
                    {
                        public static readonly Dictionary<Type, Func<SwitchMediator, object, CancellationToken, object>> Cases = new Dictionary<Type, Func<SwitchMediator, object, CancellationToken, object>>
@@ -135,7 +135,7 @@ public static class CodeGenerator
                        
                        throw new ArgumentException($"No handler for {notification.GetType().Name}");
                    }
-                   
+               
                    private static class PublishSwitchCase
                    {
                        public static readonly Dictionary<Type, Func<SwitchMediator, INotification, CancellationToken, Task>> Cases = new Dictionary<Type, Func<SwitchMediator, INotification, CancellationToken, Task>>
@@ -145,7 +145,7 @@ public static class CodeGenerator
                    }
                
                    {{string.Join("\n\n    ", behaviorMethods)}}
-                   
+               
                    [MethodImpl(MethodImplOptions.AggressiveInlining)]
                    [DebuggerStepThrough]
                    private T Get<T>(ref T? field) where T : notnull
@@ -206,8 +206,8 @@ public static class CodeGenerator
     }
 
     private static string? TryGeneratePublishCase(
-        ITypeSymbol iNotificationType, 
-        List<(ITypeSymbol Class, ITypeSymbol TNotification)> notificationHandlers, 
+        ITypeSymbol iNotificationType,
+        List<(ITypeSymbol Class, ITypeSymbol TNotification)> notificationHandlers,
         ITypeSymbol notification)
     {
         var current = notification;
@@ -256,7 +256,8 @@ public static class CodeGenerator
     }
 
     private static string Normalize(string code) =>
-        string.Join("\n",
-            code.Replace("\r\n", "\n").TrimEnd().Split('\n')
+        string.Join(Environment.NewLine,
+            code.Replace("\r\n", "\n") // Normalize Windows endings
+                .Split('\n')
                 .Select(line => line.TrimEnd()));
 }

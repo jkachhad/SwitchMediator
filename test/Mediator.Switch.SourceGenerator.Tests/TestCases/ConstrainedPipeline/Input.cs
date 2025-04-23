@@ -42,7 +42,7 @@ public class SpecialProcessingBehavior<TRequest, TResponse> : IPipelineBehavior<
         Console.WriteLine($"Special Behavior: Applying special processing to {typeof(TRequest).Name}");
         // Add some "processing" delay or modification if needed for testing runtime
         var response = await next();
-        Console.WriteLine($"Special Behavior: Finished special processing");
+        Console.WriteLine("Special Behavior: Finished special processing");
         return response;
     }
 }

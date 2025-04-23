@@ -11,7 +11,7 @@ public class SwitchMediatorSourceGeneratorTests : CSharpSourceGeneratorTest<Swit
         TestState.AdditionalReferences.Add(TestDefinitions.MediatorAssembly);
         TestState.ReferenceAssemblies = TestDefinitions.ReferenceAssemblies;
     }
-    
+
     [Theory]
     [InlineData("Basic")]
     [InlineData("BasicRecordType")]
@@ -34,16 +34,17 @@ public class SwitchMediatorSourceGeneratorTests : CSharpSourceGeneratorTest<Swit
     {
         var inputCode = await File.ReadAllTextAsync(Path.Combine("TestCases", testCase, "Input.cs"));
         var expectedOutput = await File.ReadAllTextAsync(Path.Combine("TestCases", testCase, "Expected.txt"));
-        
+
         TestCode = inputCode;
         TestState.GeneratedSources.Add(
             (typeof(SwitchMediatorSourceGenerator), "SwitchMediator.g.cs", Normalize(expectedOutput))
         );
         await RunAsync();
     }
-    
+
     private static string Normalize(string code) =>
-        string.Join(Environment.NewLine, 
-            code.Replace("\r\n", "\n").TrimEnd().Split('\n')
+        string.Join(Environment.NewLine,
+            code.Replace("\r\n", "\n") // Normalize Windows endings
+                .Split('\n')
                 .Select(line => line.TrimEnd()));
 }

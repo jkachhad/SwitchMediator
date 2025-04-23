@@ -14,7 +14,7 @@ namespace Mediator.Switch.SourceGenerator
 
         public void Execute(GeneratorExecutionContext context)
         {
-            if (context.SyntaxReceiver is not SyntaxCollector receiver) 
+            if (context.SyntaxReceiver is not SyntaxCollector receiver)
                 return;
 
             try
@@ -25,7 +25,7 @@ namespace Mediator.Switch.SourceGenerator
                     analyzer.Analyze(receiver.Types, cancellationToken);
 
                 cancellationToken.ThrowIfCancellationRequested();
-                
+
                 var sourceCode = CodeGenerator.Generate(
                     analyzer.IRequestSymbol, analyzer.INotificationSymbol, handlers, requestBehaviors, notificationHandlers, notifications, behaviors);
 
@@ -62,7 +62,7 @@ namespace Mediator.Switch.SourceGenerator
                 context.ReportDiagnostic(Diagnostic.Create(
                     new DiagnosticDescriptor(
                         "SMG999",
-                        "Error generating SwitchMediator",
+                        "BUG in SwitchMediator (please report to developer)",
                         ex.ToString(),
                         "Mediator.Switch.Generation",
                         DiagnosticSeverity.Error,

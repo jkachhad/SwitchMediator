@@ -17,7 +17,7 @@ public class SemanticAnalyzer
     private readonly INamedTypeSymbol _responseAdaptorAttributeSymbol;
     private readonly INamedTypeSymbol _orderAttributeSymbol;
     private readonly INamedTypeSymbol _requestHandlerAttributeSymbol;
-    
+
     public INamedTypeSymbol IRequestSymbol => _iRequestSymbol;
     public INamedTypeSymbol INotificationSymbol => _iNotificationSymbol;
 
@@ -28,7 +28,7 @@ public class SemanticAnalyzer
         _ = compilation.GetTypeByMetadataName("Mediator.Switch.IMediator") ?? throw new InvalidOperationException("Could not find Mediator.Switch.IMediator");
         _ = compilation.GetTypeByMetadataName("Mediator.Switch.ISender") ?? throw new InvalidOperationException("Could not find Mediator.Switch.ISender");
         _ = compilation.GetTypeByMetadataName("Mediator.Switch.IPublisher") ?? throw new InvalidOperationException("Could not find Mediator.Switch.IPublisher");
-        
+
         _iRequestSymbol = compilation.GetTypeByMetadataName("Mediator.Switch.IRequest`1") ?? throw new InvalidOperationException("Could not find Mediator.Switch.IRequest`1");
         _iRequestHandlerSymbol = compilation.GetTypeByMetadataName("Mediator.Switch.IRequestHandler`2") ?? throw new InvalidOperationException("Could not find Mediator.Switch.IRequestHandler`2");
         _iPipelineBehaviorSymbol = compilation.GetTypeByMetadataName("Mediator.Switch.IPipelineBehavior`2") ?? throw new InvalidOperationException("Could not find Mediator.Switch.IPipelineBehavior`2");
@@ -178,12 +178,12 @@ public class SemanticAnalyzer
                     return actualTResponse != null ? b with { TResponse = actualTResponse } : default;
                 })
                 // Filter out non-applicable behaviors (where unwrapping failed or constraints don't match)
-                .Where(b => b != default && BehaviorApplicabilityChecker.IsApplicable(_compilation, b.TypeParameters, request.Class, b.TResponse))
+                .Where(b => b != default && BehaviorApplicabilityChecker.IsApplicable(_compilation, b.Class, b.TypeParameters, request.Class, b.TResponse))
                 .OrderByDescending(b => GetOrder(b.Class)) // Order by attribute
                 .ToList()))
             .ToList();
     }
-    
+
     private void VerifyRequestMatchesHandler(INamedTypeSymbol classSymbol, ITypeSymbol handledType)
     {
         var requestHandlerAttribute = handledType.GetAttributes()
@@ -258,7 +258,7 @@ public class SemanticAnalyzer
 
         return typeArgSymbol;
     }
-    
+
     private int GetOrder(ITypeSymbol typeSymbol)
     {
         var orderAttribute = typeSymbol.GetAttributes()
