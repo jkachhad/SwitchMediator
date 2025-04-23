@@ -12,6 +12,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".scripts", ".scripts", "{26
 	ProjectSection(SolutionItems) = preProject
 		scripts\publish.sh = scripts\publish.sh
 		src\run_benchmarks.sh = src\run_benchmarks.sh
+		src\run_benchmarks.bat = src\run_benchmarks.bat
 	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Mediator.Switch", "src\Mediator.Switch\Mediator.Switch.csproj", "{CAF19E98-2C50-4B9D-B15D-F73606FBFE8E}"

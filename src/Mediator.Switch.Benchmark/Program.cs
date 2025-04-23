@@ -9,8 +9,11 @@ namespace Mediator.Switch.Benchmark;
 [MarkdownExporterAttribute.GitHub]
 public class MediatorBenchmarks
 {
-    [Params(25, 150, 500, 1000)]
+    [Params(25, 200, 1000)]
     public int N; // Represents the number of parallel handlers compiled
+
+    [Params(0, 1, 5)]
+    public int B; // Number of open behaviors
 
     private IServiceProvider _mediatRProvider = null!;
     private IServiceProvider _switchMediatorProvider = null!;
@@ -21,10 +24,12 @@ public class MediatorBenchmarks
     private Ping1Request_Switch _requestToSendSwitch = null!;
     private Notify1Event_Switch _notificationToPublishSwitch = null!;
 
+    private const string TargetNamespace = "Mediator.Switch.Benchmark.Generated";
+
     [GlobalSetup]
     public void GlobalSetup()
     {
-        Console.WriteLine($"// GlobalSetup running for N={N}");
+        Console.WriteLine($"// GlobalSetup running for N={N}, BehaviorCount={B}");
         // Assembly contains BOTH _MediatR and _Switch types for the current N
         var handlerAssembly = typeof(Ping1RequestHandler_MediatR).Assembly; // Or _Switch
 
@@ -34,6 +39,12 @@ public class MediatorBenchmarks
             // MediatR scans and finds types implementing its interfaces (_MediatR types)
             cfg.RegisterServicesFromAssembly(handlerAssembly);
             cfg.Lifetime = ServiceLifetime.Singleton;
+            // Register open behaviors
+            for (var i = 1; i <= B; i++)
+            {
+                cfg.AddOpenBehavior(handlerAssembly.GetType($"{TargetNamespace}.OpenBehavior{i}_MediatR`2") ??
+                                    throw new InvalidOperationException());
+            }
         });
         _mediatRProvider = mediatRServices.BuildServiceProvider();
 
@@ -72,10 +83,10 @@ public class MediatorBenchmarks
             cfg.Lifetime = ServiceLifetime.Singleton;
         });
         var sp = services.BuildServiceProvider(); // Measures scanning + DI registration
-        sp.Dispose(); // Teardown should be negligible but prevents garbage build up 
+        sp.Dispose(); // Teardown should be negligible but prevents garbage build up
         return sp;
     }
-    
+
     [Benchmark(Description = "SwitchMediator: Build Service Provider")]
     public IServiceProvider SwitchMediator_Startup()
     {
