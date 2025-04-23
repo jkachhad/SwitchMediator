@@ -6,9 +6,9 @@
 
 **SwitchMediator: A Blazing Fast, Source-Generated Mediator for .NET**
 
-SwitchMediator provides a high-performance implementation of the mediator pattern, offering an API surface familiar to users of popular libraries like [MediatR](https://github.com/jbogard/MediatR). By leveraging **C# Source Generators**, SwitchMediator eliminates runtime reflection for handler discovery and dispatch, instead generating highly optimized `switch` statements at compile time (this is done using a static readonly Dictionary that gets constructed at startup for O(1) execution regardless of the number of request / events you might have). We also want you to <em>**Switch**</em> your <em>**Mediator**</em> to ours, get it? 😉
+SwitchMediator provides a high-performance (see [benchmark results](src/Mediator.Switch.Benchmark/benchmark_results.md) - **146x** faster startup and **6.7x** faster dispatch, with no performance regression even at over 1000 requests and handlers) implementation of the mediator pattern, offering an API surface familiar to users of popular libraries like [MediatR](https://github.com/jbogard/MediatR). By leveraging **C# Source Generators**, SwitchMediator eliminates runtime reflection for handler discovery and dispatch, instead generating highly optimized `switch` statements at compile time (this is done using a static readonly Dictionary that gets constructed at startup for O(1) execution regardless of the number of request / events you might have). We also want you to <em>**Switch**</em> your <em>**Mediator**</em> to ours, get it? 😉
 
-Aside from performance, SwitchMediator is first and foremost designed to overcome frequent community frustrations with MediatR, addressing factors that have hindered its wider adoption.
+Aside from performance, SwitchMediator is first and foremost designed to overcome frequent community frustrations with MediatR, addressing factors that have hindered its wider adoption especially due to its less than ideal DX (developer experience).
 
 **The result? Faster execution, improved startup times, step-into debuggability, and compile-time safety.**
 
@@ -44,8 +44,8 @@ Traditional mediator implementations often rely on runtime reflection to discove
 *   🚀 **Maximum Performance:** Eliminates runtime reflection and dictionary lookups for dispatch. Uses compile-time `switch` statements and direct method calls. Ideal for performance-critical paths and high-throughput applications.
 *   🧐 **Enhanced Debuggability:** You can directly **step into the generated `SwitchMediator.g.cs` file**! See the exact `switch` statement matching your request, observe the explicit nesting of pipeline behavior calls (`await next(...)`), and step directly into your handler code. This provides unparalleled transparency compared to debugging reflection-based dispatch logic.
 *   ✅ **Compile-Time Safety:** Handler discovery happens during the build. Missing request handlers result in **build errors**, not runtime exceptions, catching issues earlier in the development cycle.
-*   ✂️ **Trimming / AOT Friendly:** Avoids runtime reflection, making the dispatch mechanism inherently more compatible with .NET trimming and AOT compilation. (Note: Ensure handlers and dependencies are also trimming/AOT safe).
-*   🔍 **Explicitness:** The generated code serves as clear, inspectable documentation of how requests are routed and pipelines are constructed for each message type.
+*   ✂️ **Trimming / AOT Friendly:** Avoids runtime reflection, making the dispatch mechanism inherently more compatible with .NET trimming and AOT compilation. The sample console app runs with PublishAot enabled. (Note: Ensure handlers and dependencies are also trimming/AOT safe).
+*   🔍 **Explicitness:** The generated code serves as clear, inspectable documentation of how requests are routed and pipelines are constructed for each message type. Attributes are provided to ease navigating between Request and its handler, as well as to order pipeline behaviors. Ordering of notification handlers can also be explicitly specified.
 
 ## Features
 
