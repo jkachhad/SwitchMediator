@@ -83,7 +83,7 @@ public static class Program
         }
 
         File.WriteAllText(Path.Combine(outputDir, "GeneratedRequestsAndResponses.cs"), sb.ToString());
-        Console.WriteLine($"Generated GeneratedRequestsAndResponses.cs");
+        Console.WriteLine("Generated GeneratedRequestsAndResponses.cs");
     }
 
     private static void GenerateRequestHandlers(int count, string outputDir)
@@ -114,7 +114,7 @@ public static class Program
         }
 
         File.WriteAllText(Path.Combine(outputDir, "GeneratedRequestHandlers.cs"), sb.ToString());
-        Console.WriteLine($"Generated GeneratedRequestHandlers.cs");
+        Console.WriteLine("Generated GeneratedRequestHandlers.cs");
     }
 
     private static void GenerateNotificationsAndHandlers(int requestCount, string outputDir)

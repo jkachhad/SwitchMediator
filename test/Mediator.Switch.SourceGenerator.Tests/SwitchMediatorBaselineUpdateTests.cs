@@ -18,7 +18,7 @@ public class SwitchMediatorBaselineUpdateTests
     private static readonly ReferenceAssemblies _referenceAssemblies = TestDefinitions.ReferenceAssemblies;
     private static readonly Assembly _mediatorAssembly = TestDefinitions.MediatorAssembly;
 
-    public SwitchMediatorBaselineUpdateTests(ITestOutputHelper output) => 
+    public SwitchMediatorBaselineUpdateTests(ITestOutputHelper output) =>
         _output = output;
 
     [TheoryRunnableInDebugOnly]
@@ -112,7 +112,7 @@ public class SwitchMediatorBaselineUpdateTests
             // Write errors to output for easier debugging
             _output.WriteLine($"--- ERRORS Encountered for {testCase} ---");
             _output.WriteLine(errorMessages);
-            _output.WriteLine($"--------------------------------------");
+            _output.WriteLine("--------------------------------------");
             // Fail the test so the baseline isn't updated with error output
             Assert.Fail($"Generator or compilation errors encountered during baseline update for '{testCase}'. See test output for details.");
         }
@@ -124,7 +124,7 @@ public class SwitchMediatorBaselineUpdateTests
         {
             _output.WriteLine($"--- WARNINGS Encountered for {testCase} ---");
             foreach (var warn in warnings) _output.WriteLine(warn.ToString());
-            _output.WriteLine($"---------------------------------------");
+            _output.WriteLine("---------------------------------------");
         }
 
 
@@ -139,7 +139,7 @@ public class SwitchMediatorBaselineUpdateTests
             {
                 _output.WriteLine($"--- GENERATOR EXCEPTION for {testCase} ---");
                 _output.WriteLine(generatorResult.Value.Exception.ToString());
-                _output.WriteLine($"---------------------------------------");
+                _output.WriteLine("---------------------------------------");
                 Assert.Fail($"Generator threw an exception during baseline update for '{testCase}': {generatorResult.Value.Exception.Message}");
             }
 
@@ -155,7 +155,7 @@ public class SwitchMediatorBaselineUpdateTests
                 _output.WriteLine($"--- ERROR: MISSING OUTPUT FILE for {testCase} ---");
                 _output.WriteLine($"Generator ran, but did not produce output with hint name '{expectedHintName}'.");
                 _output.WriteLine($"Generated files: [{string.Join(", ", generatorResult.Value.GeneratedSources.Select(gs => gs.HintName))}]");
-                _output.WriteLine($"------------------------------------------------");
+                _output.WriteLine("------------------------------------------------");
                 Assert.Fail($"Generator ran but did not produce expected output '{expectedHintName}' for test case '{testCase}'.");
             }
         } else {
@@ -165,11 +165,8 @@ public class SwitchMediatorBaselineUpdateTests
         }
 
 
-        // --- Normalize and Overwrite the Expected.txt file ---
-        var normalizedActualOutput = Normalize(actualGeneratedCode);
-
         Directory.CreateDirectory(Path.GetDirectoryName(expectedPath)!); // Ensure directory exists
-        await File.WriteAllTextAsync(expectedPath, normalizedActualOutput);
+        await File.WriteAllTextAsync(expectedPath, actualGeneratedCode);
         _output.WriteLine($"Successfully updated baseline file: {expectedPath}");
 
         // --- No Assertions needed here beyond checking for errors ---
@@ -177,13 +174,8 @@ public class SwitchMediatorBaselineUpdateTests
         // We assert fail above if errors occur during generation.
     }
 
-    private static string Normalize(string code) =>
-        string.Join(Environment.NewLine,
-            code.Replace("\r\n", "\n").TrimEnd().Split('\n')
-                .Select(line => line.TrimEnd()));
-    
     private static string GetThisFilePath([CallerFilePath] string? path = null) => path!;
-    
+
     private static async Task InitializeReferencesAsync(ITestOutputHelper output)
     {
         if (_metadataReferences == null)
