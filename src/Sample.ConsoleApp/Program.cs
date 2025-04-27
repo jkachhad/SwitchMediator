@@ -60,6 +60,11 @@ public static class Program
         var loginEvent = new DerivedUserLoggedInEvent(123);
         await publisher.Publish(loginEvent);
         Console.WriteLine("--- Notification Published ---\n");
+        
+        Console.WriteLine("--- Invoking UserLoggedOutEvent ---");
+        var logoutEvent = new UserLoggedOutEvent(123);
+        await publisher.Invoke(logoutEvent);
+        Console.WriteLine("--- Notification Invoked ---\n");
 
         Console.WriteLine("--- Sending GetUserRequest with Validation Failure ---");
         try

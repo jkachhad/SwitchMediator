@@ -68,6 +68,11 @@ public class User : IVersionedResponse
     public int Version { get; set; }
 }
 
+public record UserLoggedOutEvent(int UserId) : INotification
+{
+    public int UserId { get; } = UserId;
+}
+
 // Request Handlers
 public class GetUserRequestHandler : IRequestHandler<GetUserRequest, Result<User>>
 {

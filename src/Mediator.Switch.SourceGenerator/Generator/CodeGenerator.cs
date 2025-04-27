@@ -136,6 +136,16 @@ public static class CodeGenerator
                        throw new ArgumentException($"No handler for {notification.GetType().Name}");
                    }
                
+                   public Task Invoke(INotification notification, CancellationToken cancellationToken = default)
+                   {
+                       if (PublishSwitchCase.Cases.TryGetValue(notification.GetType(), out var handle))
+                       {
+                           return handle(this, notification, cancellationToken);
+                       }
+                       
+                       return Task.CompletedTask;
+                   }
+               
                    private static class PublishSwitchCase
                    {
                        public static readonly Dictionary<Type, Func<SwitchMediator, INotification, CancellationToken, Task>> Cases = new Dictionary<Type, Func<SwitchMediator, INotification, CancellationToken, Task>>

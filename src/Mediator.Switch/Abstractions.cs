@@ -15,12 +15,21 @@ public interface ISender
 public interface IPublisher
 {
     /// <summary>
+    /// Publishes a notification to at least one or multiple handlers.
+    /// </summary>
+    /// <param name="notification">The notification object.</param>
+    /// <param name="cancellationToken">An optional cancellation token.</param>
+    /// <returns>A task representing the asynchronous operation.</returns>
+    /// <remarks>An <see cref="ArgumentException"/> is thrown if there are no handlers.</remarks>
+    Task Publish(INotification notification, CancellationToken cancellationToken = default);
+    
+    /// <summary>
     /// Publishes a notification to multiple handlers.
     /// </summary>
     /// <param name="notification">The notification object.</param>
     /// <param name="cancellationToken">An optional cancellation token.</param>
     /// <returns>A task representing the asynchronous operation.</returns>
-    Task Publish(INotification notification, CancellationToken cancellationToken = default);
+    Task Invoke(INotification notification, CancellationToken cancellationToken = default);
 }
 
 public interface IMediator : ISender, IPublisher;
