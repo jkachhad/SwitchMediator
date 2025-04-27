@@ -77,7 +77,7 @@ public static class ServiceCollectionExtensions
             Sort(n.HandlerTypes, orderedHandlerTypes);
             foreach (var handlerType in n.HandlerTypes)
             {
-                services.TryAdd(new ServiceDescriptor(
+                services.Add(new ServiceDescriptor(
                     typeof(INotificationHandler<>).MakeGenericType(n.NotificationType),
                     handlerType,
                     options.ServiceLifetime));
