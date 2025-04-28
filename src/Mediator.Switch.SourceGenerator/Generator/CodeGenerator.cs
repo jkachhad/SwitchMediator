@@ -74,6 +74,7 @@ public static class CodeGenerator
                #nullable enable
                
                using System;
+               using System.Linq;
                using System.Collections.Generic;
                using System.Diagnostics;
                using System.Runtime.CompilerServices;
