@@ -80,6 +80,10 @@ public static class CodeGenerator
                using System.Threading;
                using System.Threading.Tasks;
                
+               #if NET8_0_OR_GREATER
+               using System.Collections.Frozen;
+               #endif
+               
                namespace Mediator.Switch;
                
                #pragma warning disable CS1998, CS0169
@@ -120,10 +124,16 @@ public static class CodeGenerator
                
                    private static class SendSwitchCase
                    {
-                       public static readonly Dictionary<Type, Func<SwitchMediator, object, CancellationToken, object>> Cases = new Dictionary<Type, Func<SwitchMediator, object, CancellationToken, object>>
+                       public static readonly IDictionary<Type, Func<SwitchMediator, object, CancellationToken, object>> Cases = new (Type, Func<SwitchMediator, object, CancellationToken, object>)[]
                        {
                {{string.Join(",\n", sendCases)}}
-                       };
+                       }
+               #if NET8_0_OR_GREATER
+                       .ToFrozenDictionary
+               #else
+                       .ToDictionary
+               #endif
+                           (t => t.Item1, t => t.Item2);
                    }
                
                    public Task Publish(INotification notification, CancellationToken cancellationToken = default)
@@ -132,16 +142,20 @@ public static class CodeGenerator
                        {
                            return handle(this, notification, cancellationToken);
                        }
-                       
-                       throw new ArgumentException($"No handler for {notification.GetType().Name}");
                    }
                
                    private static class PublishSwitchCase
                    {
-                       public static readonly Dictionary<Type, Func<SwitchMediator, INotification, CancellationToken, Task>> Cases = new Dictionary<Type, Func<SwitchMediator, INotification, CancellationToken, Task>>
+                       public static readonly IDictionary<Type, Func<SwitchMediator, INotification, CancellationToken, Task>> Cases = new (Type, Func<SwitchMediator, INotification, CancellationToken, Task>)[]
                        {
                {{string.Join(",\n", publishCases)}}
-                       };
+                       }
+               #if NET8_0_OR_GREATER
+                       .ToFrozenDictionary
+               #else
+                       .ToDictionary
+               #endif
+                           (t => t.Item1, t => t.Item2);
                    }
                
                    {{string.Join("\n\n    ", behaviorMethods)}}
@@ -190,11 +204,11 @@ public static class CodeGenerator
             if (handler != default)
             {
                 return $$"""
-                                     { // case {{request.Class}}:
+                                     ( // case {{request.Class}}:
                                          typeof({{request.Class}}), (instance, request, cancellationToken) =>
                                              instance.Handle_{{current.GetVariableName(false)}}(
                                                  ({{request.Class}}) request, cancellationToken)
-                                     }
+                                     )
                          """;
             }
             current = current.BaseType;
@@ -218,7 +232,7 @@ public static class CodeGenerator
             if (handler != default)
             {
                 return $$"""
-                                     { // case {{notification}}:
+                                     ( // case {{notification}}:
                                          typeof({{notification}}), async (instance, notification, cancellationToken) =>
                                          {
                                              foreach (var handler in instance.Get(ref instance._{{current.GetVariableName()}}__Handlers))
@@ -226,7 +240,7 @@ public static class CodeGenerator
                                                  await handler.Handle(({{notification}})notification, cancellationToken);
                                              }
                                          }
-                                     }
+                                     )
                          """;
             }
             current = current.BaseType;

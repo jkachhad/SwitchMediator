@@ -20,8 +20,6 @@ public abstract class MediatorTestBase : IDisposable
 
         // Register Test Notification Handlers instead of console ones
         services.AddSingleton<NotificationTracker>(); // Add tracker
-        services.AddTransient<INotificationHandler<UserLoggedInEvent>, TestUserLoggedInLogger>();
-        services.AddTransient<INotificationHandler<UserLoggedInEvent>, TestUserLoggedInAnalytics>();
 
         // Register SwitchMediator - Mirroring Program.cs setup
         services.AddMediator<SwitchMediator>(op =>
@@ -30,8 +28,8 @@ public abstract class MediatorTestBase : IDisposable
             op.ServiceLifetime = ServiceLifetime.Scoped;
 
             op.OrderNotificationHandlers<UserLoggedInEvent>(
-                typeof(TestUserLoggedInLogger), // Logger first
-                typeof(TestUserLoggedInAnalytics) // Analytics second
+                typeof(TestUserLoggedInLogger) // Logger first
+                // typeof(TestUserLoggedInAnalytics) // Analytics second (should be automatically registered)
             );
         });
 
