@@ -23,7 +23,7 @@ public static class Program
                     // e.g., typeof(UserLoggedInAnalytics)
                 );
             });
-            
+
         var serviceProvider = services.BuildServiceProvider();
 
         using var scope = serviceProvider.CreateScope();

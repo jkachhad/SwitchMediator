@@ -1,5 +1,4 @@
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace Mediator.Switch.Extensions.Microsoft.DependencyInjection;
 
@@ -55,12 +54,12 @@ public static class ServiceCollectionExtensions
 
         return services;
     }
-    
+
     private static void RegisterRequestHandlers(IServiceCollection services, IEnumerable<Type> requestHandlerTypes, SwitchMediatorOptions options)
     {
         foreach (var handlerType in requestHandlerTypes)
         {
-            services.TryAdd(new ServiceDescriptor(handlerType, handlerType, options.ServiceLifetime));
+            services.Add(new ServiceDescriptor(handlerType, handlerType, options.ServiceLifetime));
         }
     }
 
@@ -71,9 +70,10 @@ public static class ServiceCollectionExtensions
     {
         foreach (var n in notificationTypes)
         {
-            if (options.OrderedNotificationHandlers.TryGetValue(n.NotificationType, out var orderedHandlerTypes))
-                Sort(n.HandlerTypes, orderedHandlerTypes);
-            
+            if (!options.OrderedNotificationHandlers.TryGetValue(n.NotificationType, out var orderedHandlerTypes))
+                continue;
+
+            Sort(n.HandlerTypes, orderedHandlerTypes);
             foreach (var handlerType in n.HandlerTypes)
             {
                 services.Add(new ServiceDescriptor(
@@ -88,10 +88,10 @@ public static class ServiceCollectionExtensions
     {
         foreach (var behaviorType in behaviorTypes)
         {
-            services.TryAdd(new ServiceDescriptor(behaviorType, behaviorType, options.ServiceLifetime));
+            services.Add(new ServiceDescriptor(behaviorType, behaviorType, options.ServiceLifetime));
         }
     }
-    
+
     private static void Sort(Type[] typesToSort, Type[] specificOrder)
     {
         if (specificOrder.Length == 0)
