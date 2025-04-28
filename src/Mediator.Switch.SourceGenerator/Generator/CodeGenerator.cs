@@ -142,6 +142,8 @@ public static class CodeGenerator
                        {
                            return handle(this, notification, cancellationToken);
                        }
+                       
+                       return Task.CompletedTask;
                    }
                
                    private static class PublishSwitchCase
