@@ -70,10 +70,11 @@ public static class ServiceCollectionExtensions
     {
         foreach (var n in notificationTypes)
         {
-            if (!options.OrderedNotificationHandlers.TryGetValue(n.NotificationType, out var orderedHandlerTypes))
-                continue;
+            if (options.OrderedNotificationHandlers.TryGetValue(n.NotificationType, out var orderedHandlerTypes))
+            {
+                Sort(n.HandlerTypes, orderedHandlerTypes);
+            }
 
-            Sort(n.HandlerTypes, orderedHandlerTypes);
             foreach (var handlerType in n.HandlerTypes)
             {
                 services.Add(new ServiceDescriptor(
