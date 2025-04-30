@@ -1,16 +1,37 @@
 using FluentValidation;
+using Mediator.Switch.Extensions.Microsoft.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Mediator.Switch.Tests;
 
-public class MediatorIntegrationTests : MediatorTestBase
+public class MediatorIntegrationTests : IDisposable
 {
+    private readonly ServiceProvider _serviceProvider;
+    private readonly IServiceScope _scope;
+    private readonly ISender _sender;
+    private readonly IPublisher _publisher;
     private readonly NotificationTracker _notificationTracker;
 
-    // Constructor to get the tracker instance
     public MediatorIntegrationTests()
     {
-        _notificationTracker = Scope.ServiceProvider.GetRequiredService<NotificationTracker>();
+        static void ConfigureMediator(SwitchMediatorOptions op)
+        {
+            op.OrderNotificationHandlers<UserLoggedInEvent>(
+                typeof(TestUserLoggedInLogger) // Logger first
+                // Analytics handler is automatically appended
+            );
+        }
+
+        var setupResult = MediatorTestSetup.Setup(
+            configureMediator: ConfigureMediator,
+            lifetime: ServiceLifetime.Scoped
+        );
+
+        _serviceProvider = setupResult.ServiceProvider;
+        _scope = setupResult.Scope;
+        _sender = setupResult.Sender;
+        _publisher = setupResult.Publisher;
+        _notificationTracker = setupResult.Tracker;
     }
 
     [Fact]
@@ -22,20 +43,20 @@ public class MediatorIntegrationTests : MediatorTestBase
         var expectedVersionAfterPipeline = initialVersion + 1;
 
         // Act
-        var result = await Sender.Send(request);
+        var result = await _sender.Send(request); // Use the field _sender
 
         // Assert
         Assert.True(result.IsSuccess);
         Assert.NotNull(result.Value);
         Assert.Equal(request.UserId, result.Value.UserId);
-        Assert.Contains($"User {request.UserId}", result.Value.Description); // Check description content
-        Assert.Equal(expectedVersionAfterPipeline, result.Value.Version); // Verify VersionIncrementingBehavior worked
+        Assert.Contains($"User {request.UserId}", result.Value.Description);
+        Assert.Equal(expectedVersionAfterPipeline, result.Value.Version);
 
-        // Assert that notifications were published (check tracker)
-        Assert.Equal(2, _notificationTracker.ExecutionOrder.Count); // Both handlers should have run
+        // Assert notifications using the field _notificationTracker
+        Assert.Equal(2, _notificationTracker.ExecutionOrder.Count);
         Assert.True(_notificationTracker.ExecutionOrder.TryDequeue(out var firstHandler));
         Assert.True(_notificationTracker.ExecutionOrder.TryDequeue(out var secondHandler));
-        Assert.Equal(nameof(TestUserLoggedInLogger), firstHandler); // Check order based on DI config
+        Assert.Equal(nameof(TestUserLoggedInLogger), firstHandler); // Check order based on constructor config
         Assert.Equal(nameof(TestUserLoggedInAnalytics), secondHandler);
     }
 
@@ -44,10 +65,10 @@ public class MediatorIntegrationTests : MediatorTestBase
     {
         // Arrange
         var request = new CreateOrderRequest("TestProduct");
-        var expectedOrderId = 42; // As defined in the handler
+        var expectedOrderId = 42;
 
         // Act
-        var result = await Sender.Send(request);
+        var result = await _sender.Send(request); // Use the field _sender
 
         // Assert
         Assert.Equal(expectedOrderId, result);
@@ -57,12 +78,11 @@ public class MediatorIntegrationTests : MediatorTestBase
     public async Task Send_GetUserRequest_ValidationFailure_ThrowsValidationException()
     {
         // Arrange
-        var request = new GetUserRequest(-1); // Invalid UserId
+        var request = new GetUserRequest(-1);
 
         // Act & Assert
-        var exception = await Assert.ThrowsAsync<ValidationException>(() => Sender.Send(request));
-
-        // Optional: Assert specific error message
+        // Use the field _sender
+        var exception = await Assert.ThrowsAsync<ValidationException>(() => _sender.Send(request));
         Assert.Single(exception.Errors);
         Assert.Equal("UserId must be positive", exception.Errors.First().ErrorMessage);
         Assert.Equal(nameof(GetUserRequest.UserId), exception.Errors.First().PropertyName);
@@ -72,12 +92,10 @@ public class MediatorIntegrationTests : MediatorTestBase
     public async Task Send_CreateOrderRequest_ValidationFailure_ThrowsValidationException()
     {
         // Arrange
-        var request = new CreateOrderRequest(""); // Invalid Product
+        var request = new CreateOrderRequest("");
 
         // Act & Assert
-        var exception = await Assert.ThrowsAsync<ValidationException>(() => Sender.Send(request));
-
-        // Optional: Assert specific error message
+        var exception = await Assert.ThrowsAsync<ValidationException>(() => _sender.Send(request));
         Assert.Single(exception.Errors);
         Assert.Equal("Product cannot be empty", exception.Errors.First().ErrorMessage);
         Assert.Equal(nameof(CreateOrderRequest.Product), exception.Errors.First().PropertyName);
@@ -88,17 +106,16 @@ public class MediatorIntegrationTests : MediatorTestBase
     {
         // Arrange
         var notification = new UserLoggedInEvent(999);
+        _notificationTracker.ExecutionOrder.Clear(); // Clear tracker before publish if needed
 
         // Act
-        await Publisher.Publish(notification);
+        await _publisher.Publish(notification); // Use the field _publisher
 
         // Assert
-        Assert.Equal(2, _notificationTracker.ExecutionOrder.Count); // Both handlers should have run
-
-        // Verify order
+        Assert.Equal(2, _notificationTracker.ExecutionOrder.Count);
         Assert.True(_notificationTracker.ExecutionOrder.TryDequeue(out var firstHandler));
         Assert.True(_notificationTracker.ExecutionOrder.TryDequeue(out var secondHandler));
-        Assert.Equal(nameof(TestUserLoggedInLogger), firstHandler); // Check order based on DI config in base class
+        Assert.Equal(nameof(TestUserLoggedInLogger), firstHandler); // Check order based on constructor config
         Assert.Equal(nameof(TestUserLoggedInAnalytics), secondHandler);
     }
 
@@ -107,55 +124,49 @@ public class MediatorIntegrationTests : MediatorTestBase
     {
         // Arrange
         var notification = new DerivedUserLoggedInEvent(999);
+         _notificationTracker.ExecutionOrder.Clear(); // Clear tracker
 
         // Act
-        await Publisher.Publish(notification);
+        await _publisher.Publish(notification); // Use the field _publisher
 
         // Assert
-        Assert.Equal(2, _notificationTracker.ExecutionOrder.Count); // Both handlers should have run
-
-        // Verify order
+        Assert.Equal(2, _notificationTracker.ExecutionOrder.Count);
         Assert.True(_notificationTracker.ExecutionOrder.TryDequeue(out var firstHandler));
         Assert.True(_notificationTracker.ExecutionOrder.TryDequeue(out var secondHandler));
-        Assert.Equal(nameof(TestUserLoggedInLogger), firstHandler); // Check order based on DI config in base class
+        Assert.Equal(nameof(TestUserLoggedInLogger), firstHandler);
         Assert.Equal(nameof(TestUserLoggedInAnalytics), secondHandler);
     }
+
 
     [Fact]
     public async Task Send_GetUserRequest_AuditAndVersionBehaviorsRun()
     {
-        // Arrange: AuditBehavior applies to IAuditableRequest (GetUserRequest)
-        // Arrange: VersionIncrementingBehavior applies to IVersionedResponse (User)
+        // Arrange
         var request = new GetUserRequest(200);
         var initialVersion = 50;
         var expectedVersion = initialVersion + 1;
 
         // Act
-        var result = await Sender.Send(request);
+        var result = await _sender.Send(request); // Use the field _sender
 
         // Assert
         Assert.True(result.IsSuccess);
-        // We primarily assert the *effect* of the behaviors here.
-        Assert.Equal(expectedVersion, result.Value.Version); // Version behavior ran
-        // AuditBehavior's effect (Console.WriteLine) isn't easily asserted without capturing output.
-        // We trust it ran because the request implements IAuditableRequest and the pipeline didn't throw an unexpected error.
+        Assert.Equal(expectedVersion, result.Value.Version);
+        // Audit check remains implicit
     }
 
     [Fact]
     public async Task Send_CreateOrderRequest_TransactionBehaviorRuns_ButNotAuditOrVersion()
     {
-        // Arrange: TransactionBehavior applies to ITransactionalRequest (CreateOrderRequest)
-        // Arrange: AuditBehavior and VersionIncrementingBehavior do NOT apply
+        // Arrange
         var request = new CreateOrderRequest("Gadget");
 
         // Act
-        var result = await Sender.Send(request); // Result is int, not IVersionedResponse
+        var result = await _sender.Send(request); // Use the field _sender
 
         // Assert
         Assert.Equal(42, result);
-        // We trust TransactionBehavior ran because the request implements ITransactionalRequest.
-        // No direct output to assert easily, but the request completed successfully.
-        // We also know VersionIncrementingBehavior didn't run as the response isn't Result<IVersionedResponse>.
+        // Transaction check remains implicit
     }
 
     [Fact]
@@ -167,10 +178,9 @@ public class MediatorIntegrationTests : MediatorTestBase
         var request = new DogQuery(dogName, dogBreed);
 
         // Act
-        var result = await Sender.Send(request);
+        var result = await _sender.Send(request); // Use the field _sender
 
         // Assert
-        // Verify the result came from the specific DogQueryHandler
         Assert.NotNull(result);
         Assert.StartsWith("Handled by DogQueryHandler:", result);
         Assert.Contains($"Dog named {dogName}", result);
@@ -182,18 +192,23 @@ public class MediatorIntegrationTests : MediatorTestBase
     {
         // Arrange
         var catName = "Whiskers";
-        // CatQuery has no specific handler registered for it
         var request = new CatQuery(catName);
 
         // Act
-        var result = await Sender.Send(request);
+        var result = await _sender.Send(request); // Use the field _sender
 
         // Assert
-        // Verify the result came from the base AnimalQueryHandler
         Assert.NotNull(result);
         Assert.StartsWith("Handled by AnimalQueryHandler:", result);
         Assert.Contains($"Generic animal named {catName}", result);
-        Assert.DoesNotContain("Dog", result); // Ensure it didn't somehow hit the Dog handler
-        Assert.DoesNotContain("Cat:", result); // Ensure it's the generic message from the base handler
+        Assert.DoesNotContain("Dog", result);
+        Assert.DoesNotContain("Cat:", result);
+    }
+
+    public void Dispose()
+    {
+        _scope.Dispose();
+        _serviceProvider.Dispose();
+        GC.SuppressFinalize(this);
     }
 }
