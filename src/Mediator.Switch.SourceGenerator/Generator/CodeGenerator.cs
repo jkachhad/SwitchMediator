@@ -21,26 +21,29 @@ public static class CodeGenerator
             .Where(c => c.ActualRequest != null)
             .ToList();
 
+        var usedRequests = new HashSet<ITypeSymbol>(actualSendCases.Select(c => c.ActualRequest), SymbolEqualityComparer.Default);
+        var actualRequestBehaviors = requestBehaviors.Where(r => usedRequests.Contains(r.Request.Class)).ToList();
+
         var actualPublishCases = notifications
             .OrderBy(n => n, new TypeHierarchyComparer(iRequestType, notifications.Select(n => n)))
-            .Select(n => (Notification: n, ActualHandler: TryGetActualHandler(iNotificationType, notificationHandlers, n)!))
-            .Where(c => c.ActualHandler != null)
+            .Select(n => (Notification: n, ActualNotification: TryGetActualNotification(iNotificationType, notificationHandlers, n)!))
+            .Where(c => c.ActualNotification != null)
             .ToList();
 
-        var usedNotificationHandlers = new HashSet<ITypeSymbol>(actualPublishCases.Select(c => c.ActualHandler), SymbolEqualityComparer.Default);
+        var usedNotifications = new HashSet<ITypeSymbol>(actualPublishCases.Select(c => c.ActualNotification), SymbolEqualityComparer.Default);
 
         // Generate fields
         var handlerFields = handlers.Select(h => $"private {h.Class}? _{h.Class.GetVariableName()};");
 
         // Generate behavior fields specific to each request, respecting constraints
-        var behaviorFields = requestBehaviors.SelectMany(r =>
+        var behaviorFields = actualRequestBehaviors.SelectMany(r =>
         {
             var (request, applicableBehaviors) = r;
             return applicableBehaviors.Select(b =>
                 $"private {b.Class.ToString().DropGenerics()}<{request.Class}, {b.TResponse}>? _{b.Class.GetVariableName()}__{request.Class.GetVariableName()};");
         });
 
-        var notificationHandlerFields = usedNotificationHandlers.Select(n =>
+        var notificationHandlerFields = usedNotifications.Select(n =>
             $"private IEnumerable<INotificationHandler<{n}>>? _{n.GetVariableName()}__Handlers;");
 
         // Generate Send method switch cases
@@ -48,21 +51,21 @@ public static class CodeGenerator
             .Select(c => GenerateSendCase(c.ActualRequest, c.Request));
 
         // Generate behavior chain methods
-        var behaviorMethods = requestBehaviors
+        var behaviorMethods = actualRequestBehaviors
             .Select(r => TryGenerateBehaviorMethod(handlers, r))
             .Where(m => m != null);
 
         // Generate Publish method switch cases
         var publishCases = actualPublishCases
-            .Select(n => GeneratePublishCase(n.ActualHandler, n.Notification));
+            .Select(n => GeneratePublishCase(n.ActualNotification, n.Notification));
 
         // Generate known types
         var requestHandlerTypes = handlers.Select(h => $"typeof({h.Class})");
-        var notificationTypes = notifications.Select(n =>
+        var notificationTypes = usedNotifications.Select(n =>
             $"(typeof({n}), new Type[] {{\n                    {string.Join(",\n                    ", notificationHandlers
                 .Where(h => h.TNotification.Equals(n, SymbolEqualityComparer.Default))
                 .Select(h => $"typeof({h.Class})"))}\n                }})");
-        var pipelineBehaviorTypes = requestBehaviors.SelectMany(r =>
+        var pipelineBehaviorTypes = actualRequestBehaviors.SelectMany(r =>
         {
             var (request, applicableBehaviors) = r;
             return applicableBehaviors.Select(b =>
@@ -237,7 +240,7 @@ public static class CodeGenerator
                       )
           """;
 
-    private static ITypeSymbol? TryGetActualHandler(
+    private static ITypeSymbol? TryGetActualNotification(
         ITypeSymbol iNotificationType,
         List<(ITypeSymbol Class, ITypeSymbol TNotification)> notificationHandlers,
         ITypeSymbol notification)
