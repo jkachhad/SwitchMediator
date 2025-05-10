@@ -105,8 +105,11 @@ public class SwitchMediator : IMediator
         Tests.ReferencesMediator.Ping request,
         CancellationToken cancellationToken)
     {
+
+        var tests_ReferencesMediator_PingHandler = Get(ref _tests_ReferencesMediator_PingHandler);
+
         return
-            /* Request Handler */ Get(ref _tests_ReferencesMediator_PingHandler).Handle(request, cancellationToken);
+            /* Request Handler */ tests_ReferencesMediator_PingHandler.Handle(request, cancellationToken);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

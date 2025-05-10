@@ -125,7 +125,8 @@ public class SwitchMediator : IMediator
             ( // case Tests.Polymorphics.OrderPlacedEvent:
                 typeof(Tests.Polymorphics.OrderPlacedEvent), async (instance, notification, cancellationToken) =>
                 {
-                    foreach (var handler in instance.Get(ref instance._tests_Polymorphics_OrderPlacedEvent__Handlers))
+                    var handlers = instance.Get(ref instance._tests_Polymorphics_OrderPlacedEvent__Handlers);
+                    foreach (var handler in handlers)
                     {
                         await handler.Handle((Tests.Polymorphics.OrderPlacedEvent)notification, cancellationToken);
                     }
@@ -134,7 +135,8 @@ public class SwitchMediator : IMediator
             ( // case Tests.Polymorphics.UserCreatedEvent:
                 typeof(Tests.Polymorphics.UserCreatedEvent), async (instance, notification, cancellationToken) =>
                 {
-                    foreach (var handler in instance.Get(ref instance._tests_Polymorphics_UserCreatedEvent__Handlers))
+                    var handlers = instance.Get(ref instance._tests_Polymorphics_UserCreatedEvent__Handlers);
+                    foreach (var handler in handlers)
                     {
                         await handler.Handle((Tests.Polymorphics.UserCreatedEvent)notification, cancellationToken);
                     }
@@ -153,40 +155,55 @@ public class SwitchMediator : IMediator
         Tests.Polymorphics.AnimalRequest request,
         CancellationToken cancellationToken)
     {
+
+        var tests_Polymorphics_GenericAnimalRequestHandler = Get(ref _tests_Polymorphics_GenericAnimalRequestHandler);
+
         return
-            /* Request Handler */ Get(ref _tests_Polymorphics_GenericAnimalRequestHandler).Handle(request, cancellationToken);
+            /* Request Handler */ tests_Polymorphics_GenericAnimalRequestHandler.Handle(request, cancellationToken);
     }
 
     private Task<string> Handle_Tests_Polymorphics_DogRequest(
         Tests.Polymorphics.DogRequest request,
         CancellationToken cancellationToken)
     {
+
+        var tests_Polymorphics_DogRequestHandler = Get(ref _tests_Polymorphics_DogRequestHandler);
+
         return
-            /* Request Handler */ Get(ref _tests_Polymorphics_DogRequestHandler).Handle(request, cancellationToken);
+            /* Request Handler */ tests_Polymorphics_DogRequestHandler.Handle(request, cancellationToken);
     }
 
     private Task<string> Handle_Tests_Polymorphics_CatRequest(
         Tests.Polymorphics.CatRequest request,
         CancellationToken cancellationToken)
     {
+
+        var tests_Polymorphics_CatRequestHandler = Get(ref _tests_Polymorphics_CatRequestHandler);
+
         return
-            /* Request Handler */ Get(ref _tests_Polymorphics_CatRequestHandler).Handle(request, cancellationToken);
+            /* Request Handler */ tests_Polymorphics_CatRequestHandler.Handle(request, cancellationToken);
     }
 
     private Task<double> Handle_Tests_Polymorphics_VehicleRequest(
         Tests.Polymorphics.VehicleRequest request,
         CancellationToken cancellationToken)
     {
+
+        var tests_Polymorphics_VehicleRequestHandler = Get(ref _tests_Polymorphics_VehicleRequestHandler);
+
         return
-            /* Request Handler */ Get(ref _tests_Polymorphics_VehicleRequestHandler).Handle(request, cancellationToken);
+            /* Request Handler */ tests_Polymorphics_VehicleRequestHandler.Handle(request, cancellationToken);
     }
 
     private Task<double> Handle_Tests_Polymorphics_CarRequest(
         Tests.Polymorphics.CarRequest request,
         CancellationToken cancellationToken)
     {
+
+        var tests_Polymorphics_CarRequestHandler = Get(ref _tests_Polymorphics_CarRequestHandler);
+
         return
-            /* Request Handler */ Get(ref _tests_Polymorphics_CarRequestHandler).Handle(request, cancellationToken);
+            /* Request Handler */ tests_Polymorphics_CarRequestHandler.Handle(request, cancellationToken);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

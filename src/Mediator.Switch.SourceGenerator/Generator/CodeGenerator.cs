@@ -267,7 +267,8 @@ public static class CodeGenerator
                       ( // case {{notification}}:
                           typeof({{notification}}), async (instance, notification, cancellationToken) =>
                           {
-                              foreach (var handler in instance.Get(ref instance._{{actualHandler.GetVariableName()}}__Handlers))
+                              var handlers = instance.Get(ref instance._{{actualHandler.GetVariableName()}}__Handlers);
+                              foreach (var handler in handlers)
                               {
                                   await handler.Handle(({{notification}})notification, cancellationToken);
                               }
@@ -281,12 +282,18 @@ public static class CodeGenerator
         var (request, applicableBehaviors) = r;
         var handler = handlers.FirstOrDefault(h => h.TRequest.Equals(request.Class, SymbolEqualityComparer.Default));
         if (handler == default) return null;
-        var chain = BehaviorChainBuilder.Build(applicableBehaviors, request.Class.GetVariableName(), $"Get(ref _{handler.Class.GetVariableName()}).Handle");
+        var requestName = request.Class.GetVariableName();
+        var chainVars = applicableBehaviors.Select(behavior => $"var {behavior.Class.GetVariableName()}__{requestName} = Get(ref _{behavior.Class.GetVariableName()}__{requestName});");
+        var coreVar = $"var {handler.Class.GetVariableName()} = Get(ref _{handler.Class.GetVariableName()});";
+        var chain = BehaviorChainBuilder.Build(applicableBehaviors, requestName, $"{handler.Class.GetVariableName()}.Handle");
         return $$"""
                  private Task<{{request.TResponse}}> Handle_{{request.Class.GetVariableName(false)}}(
                          {{request.Class}} request,
                          CancellationToken cancellationToken)
                      {
+                         {{string.Join("\n        ", chainVars)}}
+                         {{coreVar}}
+                         
                          return
                              {{chain}};
                      }

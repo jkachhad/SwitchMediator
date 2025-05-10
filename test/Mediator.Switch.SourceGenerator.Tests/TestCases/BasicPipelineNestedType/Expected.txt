@@ -106,9 +106,12 @@ public class SwitchMediator : IMediator
         Tests.BasicPipelineNestedType.Ping request,
         CancellationToken cancellationToken)
     {
+        var tests_BasicPipelineNestedType_GenericBehavior__tests_BasicPipelineNestedType_Ping = Get(ref _tests_BasicPipelineNestedType_GenericBehavior__tests_BasicPipelineNestedType_Ping);
+        var tests_BasicPipelineNestedType_PingHandler = Get(ref _tests_BasicPipelineNestedType_PingHandler);
+
         return
-            Get(ref _tests_BasicPipelineNestedType_GenericBehavior__tests_BasicPipelineNestedType_Ping).Handle(request, () =>
-            /* Request Handler */ Get(ref _tests_BasicPipelineNestedType_PingHandler).Handle(request, cancellationToken),
+            tests_BasicPipelineNestedType_GenericBehavior__tests_BasicPipelineNestedType_Ping.Handle(request, () =>
+            /* Request Handler */ tests_BasicPipelineNestedType_PingHandler.Handle(request, cancellationToken),
             cancellationToken);
     }
 

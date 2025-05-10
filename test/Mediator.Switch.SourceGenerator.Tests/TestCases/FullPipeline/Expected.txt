@@ -107,7 +107,8 @@ public class SwitchMediator : IMediator
             ( // case Tests.FullPipeline.UserLoggedInEvent:
                 typeof(Tests.FullPipeline.UserLoggedInEvent), async (instance, notification, cancellationToken) =>
                 {
-                    foreach (var handler in instance.Get(ref instance._tests_FullPipeline_UserLoggedInEvent__Handlers))
+                    var handlers = instance.Get(ref instance._tests_FullPipeline_UserLoggedInEvent__Handlers);
+                    foreach (var handler in handlers)
                     {
                         await handler.Handle((Tests.FullPipeline.UserLoggedInEvent)notification, cancellationToken);
                     }
@@ -126,11 +127,16 @@ public class SwitchMediator : IMediator
         Tests.FullPipeline.GetUserRequest request,
         CancellationToken cancellationToken)
     {
+        var tests_FullPipeline_AuditBehavior__tests_FullPipeline_GetUserRequest = Get(ref _tests_FullPipeline_AuditBehavior__tests_FullPipeline_GetUserRequest);
+        var tests_FullPipeline_ValidationBehavior__tests_FullPipeline_GetUserRequest = Get(ref _tests_FullPipeline_ValidationBehavior__tests_FullPipeline_GetUserRequest);
+        var tests_FullPipeline_LoggingBehavior__tests_FullPipeline_GetUserRequest = Get(ref _tests_FullPipeline_LoggingBehavior__tests_FullPipeline_GetUserRequest);
+        var tests_FullPipeline_GetUserRequestHandler = Get(ref _tests_FullPipeline_GetUserRequestHandler);
+
         return
-            Get(ref _tests_FullPipeline_LoggingBehavior__tests_FullPipeline_GetUserRequest).Handle(request, () =>
-            Get(ref _tests_FullPipeline_ValidationBehavior__tests_FullPipeline_GetUserRequest).Handle(request, () =>
-            Get(ref _tests_FullPipeline_AuditBehavior__tests_FullPipeline_GetUserRequest).Handle(request, () =>
-            /* Request Handler */ Get(ref _tests_FullPipeline_GetUserRequestHandler).Handle(request, cancellationToken),
+            tests_FullPipeline_LoggingBehavior__tests_FullPipeline_GetUserRequest.Handle(request, () =>
+            tests_FullPipeline_ValidationBehavior__tests_FullPipeline_GetUserRequest.Handle(request, () =>
+            tests_FullPipeline_AuditBehavior__tests_FullPipeline_GetUserRequest.Handle(request, () =>
+            /* Request Handler */ tests_FullPipeline_GetUserRequestHandler.Handle(request, cancellationToken),
             cancellationToken),
             cancellationToken),
             cancellationToken);
@@ -140,11 +146,16 @@ public class SwitchMediator : IMediator
         Tests.FullPipeline.CreateOrderRequest request,
         CancellationToken cancellationToken)
     {
+        var tests_FullPipeline_TransactionBehavior__tests_FullPipeline_CreateOrderRequest = Get(ref _tests_FullPipeline_TransactionBehavior__tests_FullPipeline_CreateOrderRequest);
+        var tests_FullPipeline_ValidationBehavior__tests_FullPipeline_CreateOrderRequest = Get(ref _tests_FullPipeline_ValidationBehavior__tests_FullPipeline_CreateOrderRequest);
+        var tests_FullPipeline_LoggingBehavior__tests_FullPipeline_CreateOrderRequest = Get(ref _tests_FullPipeline_LoggingBehavior__tests_FullPipeline_CreateOrderRequest);
+        var tests_FullPipeline_CreateOrderRequestHandler = Get(ref _tests_FullPipeline_CreateOrderRequestHandler);
+
         return
-            Get(ref _tests_FullPipeline_LoggingBehavior__tests_FullPipeline_CreateOrderRequest).Handle(request, () =>
-            Get(ref _tests_FullPipeline_ValidationBehavior__tests_FullPipeline_CreateOrderRequest).Handle(request, () =>
-            Get(ref _tests_FullPipeline_TransactionBehavior__tests_FullPipeline_CreateOrderRequest).Handle(request, () =>
-            /* Request Handler */ Get(ref _tests_FullPipeline_CreateOrderRequestHandler).Handle(request, cancellationToken),
+            tests_FullPipeline_LoggingBehavior__tests_FullPipeline_CreateOrderRequest.Handle(request, () =>
+            tests_FullPipeline_ValidationBehavior__tests_FullPipeline_CreateOrderRequest.Handle(request, () =>
+            tests_FullPipeline_TransactionBehavior__tests_FullPipeline_CreateOrderRequest.Handle(request, () =>
+            /* Request Handler */ tests_FullPipeline_CreateOrderRequestHandler.Handle(request, cancellationToken),
             cancellationToken),
             cancellationToken),
             cancellationToken);
