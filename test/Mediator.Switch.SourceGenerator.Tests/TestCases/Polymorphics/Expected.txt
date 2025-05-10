@@ -23,7 +23,7 @@ using System.Collections.Frozen;
 
 namespace Mediator.Switch;
 
-#pragma warning disable CS1998, CS0169
+#pragma warning disable CS1998
 
 public class SwitchMediator : IMediator
 {
@@ -34,8 +34,8 @@ public class SwitchMediator : IMediator
     private Tests.Polymorphics.GenericAnimalRequestHandler? _tests_Polymorphics_GenericAnimalRequestHandler;
     private Tests.Polymorphics.CarRequestHandler? _tests_Polymorphics_CarRequestHandler;
     private Tests.Polymorphics.VehicleRequestHandler? _tests_Polymorphics_VehicleRequestHandler;
-    private IEnumerable<INotificationHandler<Tests.Polymorphics.UserCreatedEvent>>? _tests_Polymorphics_UserCreatedEvent__Handlers;
     private IEnumerable<INotificationHandler<Tests.Polymorphics.OrderPlacedEvent>>? _tests_Polymorphics_OrderPlacedEvent__Handlers;
+    private IEnumerable<INotificationHandler<Tests.Polymorphics.UserCreatedEvent>>? _tests_Polymorphics_UserCreatedEvent__Handlers;
 
     private readonly ISwitchMediatorServiceProvider _svc;
 
@@ -212,12 +212,12 @@ public class SwitchMediator : IMediator
 
         public static readonly IReadOnlyList<(Type NotificationType, IReadOnlyList<Type> HandlerTypes)> NotificationTypes =
            new (Type NotificationType, IReadOnlyList<Type> HandlerTypes)[] {
+                (typeof(Tests.Polymorphics.OrderPlacedEvent), new Type[] {
+                    typeof(Tests.Polymorphics.OrderPlacedInventoryHandler)
+                }),
                 (typeof(Tests.Polymorphics.UserCreatedEvent), new Type[] {
                     typeof(Tests.Polymorphics.UserCreatedEmailHandler),
                     typeof(Tests.Polymorphics.UserCreatedAnalyticsHandler)
-                }),
-                (typeof(Tests.Polymorphics.OrderPlacedEvent), new Type[] {
-                    typeof(Tests.Polymorphics.OrderPlacedInventoryHandler)
                 })
            }.AsReadOnly();
 
