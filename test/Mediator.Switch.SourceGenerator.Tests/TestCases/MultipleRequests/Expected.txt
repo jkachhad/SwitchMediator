@@ -111,16 +111,22 @@ public class SwitchMediator : IMediator
         Tests.MultipleRequests.GetProductRequest request,
         CancellationToken cancellationToken)
     {
+
+        var tests_MultipleRequests_GetProductRequestHandler = Get(ref _tests_MultipleRequests_GetProductRequestHandler);
+
         return
-            /* Request Handler */ Get(ref _tests_MultipleRequests_GetProductRequestHandler).Handle(request, cancellationToken);
+            /* Request Handler */ tests_MultipleRequests_GetProductRequestHandler.Handle(request, cancellationToken);
     }
 
     private Task<int> Handle_Tests_MultipleRequests_GetInventoryRequest(
         Tests.MultipleRequests.GetInventoryRequest request,
         CancellationToken cancellationToken)
     {
+
+        var tests_MultipleRequests_GetInventoryRequestHandler = Get(ref _tests_MultipleRequests_GetInventoryRequestHandler);
+
         return
-            /* Request Handler */ Get(ref _tests_MultipleRequests_GetInventoryRequestHandler).Handle(request, cancellationToken);
+            /* Request Handler */ tests_MultipleRequests_GetInventoryRequestHandler.Handle(request, cancellationToken);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

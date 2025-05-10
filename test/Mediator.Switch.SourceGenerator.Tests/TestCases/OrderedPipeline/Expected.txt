@@ -108,11 +108,16 @@ public class SwitchMediator : IMediator
         Tests.OrderedPipeline.CalculationRequest request,
         CancellationToken cancellationToken)
     {
+        var tests_OrderedPipeline_MonitoringBehavior__tests_OrderedPipeline_CalculationRequest = Get(ref _tests_OrderedPipeline_MonitoringBehavior__tests_OrderedPipeline_CalculationRequest);
+        var tests_OrderedPipeline_ValidationBehavior__tests_OrderedPipeline_CalculationRequest = Get(ref _tests_OrderedPipeline_ValidationBehavior__tests_OrderedPipeline_CalculationRequest);
+        var tests_OrderedPipeline_LoggingBehavior__tests_OrderedPipeline_CalculationRequest = Get(ref _tests_OrderedPipeline_LoggingBehavior__tests_OrderedPipeline_CalculationRequest);
+        var tests_OrderedPipeline_CalculationRequestHandler = Get(ref _tests_OrderedPipeline_CalculationRequestHandler);
+
         return
-            Get(ref _tests_OrderedPipeline_LoggingBehavior__tests_OrderedPipeline_CalculationRequest).Handle(request, () =>
-            Get(ref _tests_OrderedPipeline_ValidationBehavior__tests_OrderedPipeline_CalculationRequest).Handle(request, () =>
-            Get(ref _tests_OrderedPipeline_MonitoringBehavior__tests_OrderedPipeline_CalculationRequest).Handle(request, () =>
-            /* Request Handler */ Get(ref _tests_OrderedPipeline_CalculationRequestHandler).Handle(request, cancellationToken),
+            tests_OrderedPipeline_LoggingBehavior__tests_OrderedPipeline_CalculationRequest.Handle(request, () =>
+            tests_OrderedPipeline_ValidationBehavior__tests_OrderedPipeline_CalculationRequest.Handle(request, () =>
+            tests_OrderedPipeline_MonitoringBehavior__tests_OrderedPipeline_CalculationRequest.Handle(request, () =>
+            /* Request Handler */ tests_OrderedPipeline_CalculationRequestHandler.Handle(request, cancellationToken),
             cancellationToken),
             cancellationToken),
             cancellationToken);

@@ -112,9 +112,12 @@ public class SwitchMediator : IMediator
         Tests.BasicPipelineAdapted.Ping request,
         CancellationToken cancellationToken)
     {
+        var tests_BasicPipelineAdapted_GenericBehavior__tests_BasicPipelineAdapted_Ping = Get(ref _tests_BasicPipelineAdapted_GenericBehavior__tests_BasicPipelineAdapted_Ping);
+        var tests_BasicPipelineAdapted_PingHandler = Get(ref _tests_BasicPipelineAdapted_PingHandler);
+
         return
-            Get(ref _tests_BasicPipelineAdapted_GenericBehavior__tests_BasicPipelineAdapted_Ping).Handle(request, () =>
-            /* Request Handler */ Get(ref _tests_BasicPipelineAdapted_PingHandler).Handle(request, cancellationToken),
+            tests_BasicPipelineAdapted_GenericBehavior__tests_BasicPipelineAdapted_Ping.Handle(request, () =>
+            /* Request Handler */ tests_BasicPipelineAdapted_PingHandler.Handle(request, cancellationToken),
             cancellationToken);
     }
 
@@ -122,8 +125,11 @@ public class SwitchMediator : IMediator
         Tests.BasicPipelineAdapted.Pong request,
         CancellationToken cancellationToken)
     {
+
+        var tests_BasicPipelineAdapted_PongHandler = Get(ref _tests_BasicPipelineAdapted_PongHandler);
+
         return
-            /* Request Handler */ Get(ref _tests_BasicPipelineAdapted_PongHandler).Handle(request, cancellationToken);
+            /* Request Handler */ tests_BasicPipelineAdapted_PongHandler.Handle(request, cancellationToken);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

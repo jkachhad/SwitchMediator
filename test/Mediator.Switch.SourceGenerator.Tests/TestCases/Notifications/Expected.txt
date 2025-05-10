@@ -95,7 +95,8 @@ public class SwitchMediator : IMediator
             ( // case Tests.Notifications.OrderCreatedEvent:
                 typeof(Tests.Notifications.OrderCreatedEvent), async (instance, notification, cancellationToken) =>
                 {
-                    foreach (var handler in instance.Get(ref instance._tests_Notifications_OrderCreatedEvent__Handlers))
+                    var handlers = instance.Get(ref instance._tests_Notifications_OrderCreatedEvent__Handlers);
+                    foreach (var handler in handlers)
                     {
                         await handler.Handle((Tests.Notifications.OrderCreatedEvent)notification, cancellationToken);
                     }
@@ -114,8 +115,11 @@ public class SwitchMediator : IMediator
         Tests.Notifications.SimpleRequest request,
         CancellationToken cancellationToken)
     {
+
+        var tests_Notifications_SimpleRequestHandler = Get(ref _tests_Notifications_SimpleRequestHandler);
+
         return
-            /* Request Handler */ Get(ref _tests_Notifications_SimpleRequestHandler).Handle(request, cancellationToken);
+            /* Request Handler */ tests_Notifications_SimpleRequestHandler.Handle(request, cancellationToken);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
