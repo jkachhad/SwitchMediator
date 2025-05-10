@@ -23,7 +23,7 @@ using System.Collections.Frozen;
 
 namespace Mediator.Switch;
 
-#pragma warning disable CS1998, CS0169
+#pragma warning disable CS1998
 
 public class SwitchMediator : IMediator
 {
