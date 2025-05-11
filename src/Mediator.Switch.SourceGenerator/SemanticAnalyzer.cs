@@ -232,22 +232,55 @@ public class SemanticAnalyzer
     private List<((INamedTypeSymbol Class, ITypeSymbol TResponse) Request, List<(INamedTypeSymbol Class, ITypeSymbol TRequest, ITypeSymbol TResponse, IReadOnlyList<ITypeParameterSymbol> TypeParameters)> Behaviors)>
         ProcessRequestBehaviors(
             List<(INamedTypeSymbol Class, ITypeSymbol TResponse)> requests,
-            List<(INamedTypeSymbol Class, ITypeSymbol TRequest, ITypeSymbol TResponse, IReadOnlyList<ITypeParameterSymbol> TypeParameters, INamedTypeSymbol? WrapperType)> behaviors)
+            List<(INamedTypeSymbol Class, ITypeSymbol TRequest, ITypeSymbol TResponse, IReadOnlyList<ITypeParameterSymbol> TypeParameters, INamedTypeSymbol? WrapperType)> behaviors) =>
+        requests.Select(request =>
+        {
+            var applicableBehaviors = GetApplicableBehaviors(behaviors, request);
+            return (Request: request, Behaviors: applicableBehaviors.OrderByDescending(b => GetOrder(b.Class)).ToList());
+        }).ToList();
+
+    private IEnumerable<(INamedTypeSymbol Class, ITypeSymbol TRequest, ITypeSymbol TResponse, IReadOnlyList<ITypeParameterSymbol> TypeParameters)> GetApplicableBehaviors(List<(INamedTypeSymbol Class, ITypeSymbol TRequest, ITypeSymbol TResponse, IReadOnlyList<ITypeParameterSymbol> TypeParameters, INamedTypeSymbol? WrapperType)> behaviors, (INamedTypeSymbol Class, ITypeSymbol TResponse) request)
     {
-        return requests.Select(request =>
-            (Request: request, Behaviors: behaviors
-                .Select(b =>
+        foreach (var behavior in behaviors)
+        {
+            ITypeSymbol actualBehaviorTResponse;
+
+            if (behavior.WrapperType == null)
+            {
+                actualBehaviorTResponse = request.TResponse;
+            }
+            else
+            {
+                if (request.TResponse is INamedTypeSymbol {IsGenericType: true} requestResponseNamedType &&
+                    SymbolEqualityComparer.Default.Equals(requestResponseNamedType.OriginalDefinition, behavior.WrapperType) &&
+                    requestResponseNamedType.TypeArguments.Length == 1)
                 {
-                    var actualTResponse = TryUnwrapRequestTResponse(b, request);
-                    return actualTResponse != null
-                        ? (b.Class, b.TRequest, TResponse: actualTResponse, b.TypeParameters)
-                        : (b.Class, b.TRequest, b.TResponse, b.TypeParameters);
-                })
-                // Filter out non-applicable behaviors (where unwrapping failed or constraints don't match)
-                .Where(b => b != default && BehaviorApplicabilityChecker.IsApplicable(_compilation, b.Class, b.TypeParameters, request.Class, b.TResponse))
-                .OrderByDescending(b => GetOrder(b.Class)) // Order by attribute
-                .ToList()))
-            .ToList();
+                    actualBehaviorTResponse = requestResponseNamedType.TypeArguments[0];
+                }
+                else
+                {
+                    continue;
+                }
+            }
+
+            var constraintsMet = BehaviorApplicabilityChecker.IsApplicable(
+                _compilation,
+                behavior.Class,
+                behavior.TypeParameters,
+                request.Class,
+                actualBehaviorTResponse
+            );
+
+            if (constraintsMet)
+            {
+                yield return (
+                    behavior.Class,
+                    request.Class,
+                    actualBehaviorTResponse,
+                    behavior.TypeParameters
+                );
+            }
+        }
     }
 
     private void VerifyRequestMatchesHandler(INamedTypeSymbol classSymbol, ITypeSymbol handledType)
@@ -284,23 +317,6 @@ public class SemanticAnalyzer
             throw new SourceGenerationException($"{AdaptorAttributeGenericsTypeName} does not match IPipelineBehavior's TResponse argument.",
                 syntaxReference != null ? Location.Create(syntaxReference.SyntaxTree, syntaxReference.Span) : Location.None);
         }
-    }
-
-    private static ITypeSymbol? TryUnwrapRequestTResponse(
-        (INamedTypeSymbol Class, ITypeSymbol TRequest, ITypeSymbol TResponse, IReadOnlyList<ITypeParameterSymbol> TypeParameters, INamedTypeSymbol? WrapperType) behavior,
-        (INamedTypeSymbol Class, ITypeSymbol TResponse) request)
-    {
-        if (behavior.WrapperType == null)
-            return request.TResponse;
-
-        var responseWrapperType = behavior.WrapperType;
-        if (request.TResponse is INamedTypeSymbol unwrappedResponseType &&
-            SymbolEqualityComparer.Default.Equals(unwrappedResponseType.OriginalDefinition, responseWrapperType.OriginalDefinition))
-        {
-            return unwrappedResponseType.TypeArguments.Length == 1 ? unwrappedResponseType.TypeArguments[0] : null;
-        }
-
-        return null;
     }
 
     private static INamedTypeSymbol GetAdaptorWrapperType(AttributeData responseTypeAdaptorAttribute)
