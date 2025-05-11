@@ -8,12 +8,11 @@ public static class CodeGenerator
     public static string Generate(
         ITypeSymbol iRequestType,
         ITypeSymbol iNotificationType,
-        List<(ITypeSymbol Class, ITypeSymbol TRequest, ITypeSymbol TResponse)> handlers,
-        List<((ITypeSymbol Class, ITypeSymbol TResponse) Request, List<(ITypeSymbol Class, ITypeSymbol TRequest,
+        List<(INamedTypeSymbol Class, ITypeSymbol TRequest, ITypeSymbol TResponse)> handlers,
+        List<((INamedTypeSymbol Class, ITypeSymbol TResponse) Request, List<(INamedTypeSymbol Class, ITypeSymbol TRequest,
             ITypeSymbol TResponse, IReadOnlyList<ITypeParameterSymbol> TypeParameters)> Behaviors)> requestBehaviors,
-        List<(ITypeSymbol Class, ITypeSymbol TNotification)> notificationHandlers,
-        List<ITypeSymbol> notifications,
-        List<(ITypeSymbol Class, ITypeSymbol TRequest, ITypeSymbol TResponse, IReadOnlyList<ITypeParameterSymbol> TypeParameters)> behaviors)
+        List<(INamedTypeSymbol Class, ITypeSymbol TNotification)> notificationHandlers,
+        List<ITypeSymbol> notifications)
     {
         var actualSendCases = requestBehaviors
             .OrderBy(r => r.Request.Class, new TypeHierarchyComparer(iRequestType, requestBehaviors.Select(r => r.Request.Class)))
@@ -209,8 +208,8 @@ public static class CodeGenerator
 
     private static ITypeSymbol? TryGetActualRequest(
         ITypeSymbol iRequestType,
-        List<(ITypeSymbol Class, ITypeSymbol TRequest, ITypeSymbol TResponse)> handlers,
-        (ITypeSymbol Class, ITypeSymbol TResponse) request)
+        List<(INamedTypeSymbol Class, ITypeSymbol TRequest, ITypeSymbol TResponse)> handlers,
+        (INamedTypeSymbol Class, ITypeSymbol TResponse) request)
     {
         var current = request.Class;
         do
@@ -231,7 +230,7 @@ public static class CodeGenerator
 
     private static string GenerateSendCase(
         ITypeSymbol actualHandler,
-        (ITypeSymbol Class, ITypeSymbol TResponse) request) =>
+        (INamedTypeSymbol Class, ITypeSymbol TResponse) request) =>
         $$"""
                       ( // case {{request.Class}}:
                           typeof({{request.Class}}), (instance, request, cancellationToken) =>
@@ -242,7 +241,7 @@ public static class CodeGenerator
 
     private static ITypeSymbol? TryGetActualNotification(
         ITypeSymbol iNotificationType,
-        List<(ITypeSymbol Class, ITypeSymbol TNotification)> notificationHandlers,
+        List<(INamedTypeSymbol Class, ITypeSymbol TNotification)> notificationHandlers,
         ITypeSymbol notification)
     {
         var current = notification;
@@ -276,8 +275,8 @@ public static class CodeGenerator
                       )
           """;
 
-    private static string? TryGenerateBehaviorMethod(List<(ITypeSymbol Class, ITypeSymbol TRequest, ITypeSymbol TResponse)> handlers,
-        ((ITypeSymbol Class, ITypeSymbol TResponse) Request, List<(ITypeSymbol Class, ITypeSymbol TRequest, ITypeSymbol TResponse, IReadOnlyList<ITypeParameterSymbol> TypeParameters)> Behaviors) r)
+    private static string? TryGenerateBehaviorMethod(List<(INamedTypeSymbol Class, ITypeSymbol TRequest, ITypeSymbol TResponse)> handlers,
+        ((INamedTypeSymbol Class, ITypeSymbol TResponse) Request, List<(INamedTypeSymbol Class, ITypeSymbol TRequest, ITypeSymbol TResponse, IReadOnlyList<ITypeParameterSymbol> TypeParameters)> Behaviors) r)
     {
         var (request, applicableBehaviors) = r;
         var handler = handlers.FirstOrDefault(h => h.TRequest.Equals(request.Class, SymbolEqualityComparer.Default));

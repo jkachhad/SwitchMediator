@@ -90,7 +90,7 @@ public class GetUserRequestHandler : IRequestHandler<GetUserRequest, Result<User
 {
     private readonly IPublisher _publisher;
 
-    public GetUserRequestHandler(IPublisher publisher) => 
+    public GetUserRequestHandler(IPublisher publisher) =>
         _publisher = publisher;
 
     public async Task<Result<User>> Handle(GetUserRequest request, CancellationToken cancellationToken = default)
@@ -120,7 +120,7 @@ public class UserLoggedInLogger : INotificationHandler<UserLoggedInEvent>
 
 public class UserLoggedInAnalytics : INotificationHandler<UserLoggedInEvent>
 {
-    public async Task Handle(UserLoggedInEvent notification, CancellationToken cancellationToken = default) => 
+    public async Task Handle(UserLoggedInEvent notification, CancellationToken cancellationToken = default) =>
         Console.WriteLine($"Analytics: User {notification.UserId} tracked.");
 }
 
@@ -188,7 +188,7 @@ public class AuditBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, TR
     }
 }
 
-[PipelineBehaviorOrder(4), PipelineBehaviorResponseAdaptor(typeof(Result<>))]
+[PipelineBehaviorOrder(4)]
 public class VersionIncrementingBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, Result<TResponse>>
     where TRequest : notnull
     where TResponse : IVersionedResponse
@@ -197,9 +197,9 @@ public class VersionIncrementingBehavior<TRequest, TResponse> : IPipelineBehavio
     {
         Console.WriteLine("VersionTagging: Starting");
         var result = await next();
-        if (!result.IsSuccess) 
+        if (!result.IsSuccess)
             return result;
-        
+
         var versionedResponse = result.Value;
         versionedResponse.Version++;
         if (versionedResponse.Version > 100)
@@ -210,7 +210,7 @@ public class VersionIncrementingBehavior<TRequest, TResponse> : IPipelineBehavio
     }
 }
 
-// By default, PipelineBehaviorOrder is set to Int.MaxValue when attribute is missing 
+// By default, PipelineBehaviorOrder is set to Int.MaxValue when attribute is missing
 public class TransactionBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, TResponse>
     where TRequest : ITransactionalRequest
 {
