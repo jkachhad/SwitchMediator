@@ -5,7 +5,7 @@ namespace Mediator.Switch.SourceGenerator.Generator;
 
 public static class BehaviorChainBuilder
 {
-    public static string Build(List<(ITypeSymbol Class, ITypeSymbol TRequest, ITypeSymbol TResponse, IReadOnlyList<ITypeParameterSymbol> TypeParameters)> behaviors, string requestName, string coreHandler)
+    public static string Build(List<(INamedTypeSymbol Class, ITypeSymbol TRequest, ITypeSymbol TResponse, IReadOnlyList<ITypeParameterSymbol> TypeParameters)> behaviors, string requestName, string coreHandler)
     {
         var chain = $"/* Request Handler */ {coreHandler}(request, cancellationToken)";
         return behaviors.Any()

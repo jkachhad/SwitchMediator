@@ -33,7 +33,7 @@ public class Ping : IRequest<Result<VersionedResponse>>;
 
 public class PingHandler : IRequestHandler<Ping, Result<VersionedResponse>>
 {
-    public Task<Result<VersionedResponse>> Handle(Ping request, CancellationToken cancellationToken = default) => 
+    public Task<Result<VersionedResponse>> Handle(Ping request, CancellationToken cancellationToken = default) =>
         Task.FromResult(new Result<VersionedResponse>(new VersionedResponse { Version = 42 }));
 }
 
@@ -41,11 +41,10 @@ public class Pong : IRequest<VersionedResponse>;
 
 public class PongHandler : IRequestHandler<Pong, VersionedResponse>
 {
-    public Task<VersionedResponse> Handle(Pong request, CancellationToken cancellationToken = default) => 
+    public Task<VersionedResponse> Handle(Pong request, CancellationToken cancellationToken = default) =>
         Task.FromResult(new VersionedResponse {Version = 42});
 }
 
-[PipelineBehaviorResponseAdaptor(typeof(Result<>))]
 public class GenericBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, Result<TResponse>>
     where TRequest : notnull
     where TResponse : IVersionedResponse
