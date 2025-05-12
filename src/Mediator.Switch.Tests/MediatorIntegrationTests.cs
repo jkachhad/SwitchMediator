@@ -205,6 +205,180 @@ public class MediatorIntegrationTests : IDisposable
         Assert.DoesNotContain("Cat:", result);
     }
 
+    [Fact]
+    public async Task Publish_StartProcessNotification_InvokesCorrectHandlerInMultiHandlerClass()
+    {
+        // Arrange
+        var processId = Guid.NewGuid();
+        var notification = new StartProcessNotification(processId);
+        _notificationTracker.ExecutionOrder.Clear(); // Ensure clean state
+
+        // Act
+        await _publisher.Publish(notification);
+
+        // Assert
+        Assert.Single(_notificationTracker.ExecutionOrder);
+        Assert.True(_notificationTracker.ExecutionOrder.TryDequeue(out var handlerInfo));
+        Assert.Equal($"{nameof(MultiProcessNotificationHandler)}::{nameof(StartProcessNotification)}::{processId}", handlerInfo);
+    }
+
+    [Fact]
+    public async Task Publish_EndProcessNotification_InvokesCorrectHandlerInMultiHandlerClass()
+    {
+        // Arrange
+        var processId = Guid.NewGuid();
+        var success = true;
+        var notification = new EndProcessNotification(processId, success);
+        _notificationTracker.ExecutionOrder.Clear(); // Ensure clean state
+
+        // Act
+        await _publisher.Publish(notification);
+
+        // Assert
+        Assert.Single(_notificationTracker.ExecutionOrder);
+        Assert.True(_notificationTracker.ExecutionOrder.TryDequeue(out var handlerInfo));
+        Assert.Equal($"{nameof(MultiProcessNotificationHandler)}::{nameof(EndProcessNotification)}::{processId}::{success}", handlerInfo);
+    }
+
+    [Fact]
+    public async Task Publish_MonitorProcessNotification_InvokesCorrectHandlerInMultiHandlerClass() // If using the third notification
+    {
+        // Arrange
+        var processId = Guid.NewGuid();
+        var progress = 0.75;
+        var notification = new MonitorProcessNotification(processId, progress);
+        _notificationTracker.ExecutionOrder.Clear(); // Ensure clean state
+
+        // Act
+        await _publisher.Publish(notification);
+
+        // Assert
+        Assert.Single(_notificationTracker.ExecutionOrder);
+        Assert.True(_notificationTracker.ExecutionOrder.TryDequeue(out var handlerInfo));
+        Assert.Equal($"{nameof(MultiProcessNotificationHandler)}::{nameof(MonitorProcessNotification)}::{processId}::{progress}", handlerInfo);
+    }
+
+    [Fact]
+    public async Task Publish_MultipleDistinctNotifications_InvokesCorrectHandlersInMultiHandlerClass()
+    {
+        // Arrange
+        var processId1 = Guid.NewGuid();
+        var processId2 = Guid.NewGuid();
+        var startNotification = new StartProcessNotification(processId1);
+        var endNotification = new EndProcessNotification(processId2, false);
+        var monitorNotification = new MonitorProcessNotification(processId1, 0.5); // Optional
+
+        _notificationTracker.ExecutionOrder.Clear(); // Ensure clean state
+
+        // Act
+        await _publisher.Publish(startNotification);
+        await _publisher.Publish(endNotification);
+        await _publisher.Publish(monitorNotification); // Optional
+
+        // Assert
+        var expectedCount = 3; // Change to 2 if not using MonitorProcessNotification
+        Assert.Equal(expectedCount, _notificationTracker.ExecutionOrder.Count);
+
+        var executedHandlers = _notificationTracker.ExecutionOrder.ToList(); // Easier to assert contents
+
+        Assert.Contains($"{nameof(MultiProcessNotificationHandler)}::{nameof(StartProcessNotification)}::{processId1}", executedHandlers);
+        Assert.Contains($"{nameof(MultiProcessNotificationHandler)}::{nameof(EndProcessNotification)}::{processId2}::False", executedHandlers);
+        Assert.Contains($"{nameof(MultiProcessNotificationHandler)}::{nameof(MonitorProcessNotification)}::{processId1}::0.5", executedHandlers); // Optional
+    }
+
+    [Fact]
+    public async Task Send_ProcessDataCommand_InvokesCorrectHandlerInMultiHandlerClass()
+    {
+        // Arrange
+        var command = new ProcessDataCommand("test data");
+        _notificationTracker.ExecutionOrder.Clear(); // Ensure clean state
+
+        // Act
+        var result = await _sender.Send(command);
+
+        // Assert
+        // 1. Check the response
+        Assert.True(result.IsSuccess);
+        Assert.Equal("Processed: TEST DATA", result.Value);
+
+        // 2. Check the tracker
+        Assert.Single(_notificationTracker.ExecutionOrder);
+        Assert.True(_notificationTracker.ExecutionOrder.TryDequeue(out var handlerInfo));
+        Assert.Equal($"{nameof(MultiRequestTypeHandler)}::{nameof(ProcessDataCommand)}::{command.Data}", handlerInfo);
+    }
+
+    [Fact]
+    public async Task Send_CalculateValueQuery_InvokesCorrectHandlerInMultiHandlerClass()
+    {
+        // Arrange
+        var query = new CalculateValueQuery(21);
+         _notificationTracker.ExecutionOrder.Clear(); // Ensure clean state
+
+        // Act
+        var result = await _sender.Send(query);
+
+        // Assert
+        // 1. Check the response
+        Assert.Equal(42, result); // 21 * 2
+
+        // 2. Check the tracker
+        Assert.Single(_notificationTracker.ExecutionOrder);
+        Assert.True(_notificationTracker.ExecutionOrder.TryDequeue(out var handlerInfo));
+        Assert.Equal($"{nameof(MultiRequestTypeHandler)}::{nameof(CalculateValueQuery)}::{query.Input}", handlerInfo);
+    }
+
+    [Fact]
+    public async Task Send_GetConfigurationRequest_InvokesCorrectHandlerInMultiHandlerClass() // Optional
+    {
+        // Arrange
+        var request = new GetConfigurationRequest("TIMEOUT");
+        _notificationTracker.ExecutionOrder.Clear(); // Ensure clean state
+
+        // Act
+        var result = await _sender.Send(request);
+
+        // Assert
+        // 1. Check the response
+        Assert.Equal("30000", result);
+
+        // 2. Check the tracker
+        Assert.Single(_notificationTracker.ExecutionOrder);
+        Assert.True(_notificationTracker.ExecutionOrder.TryDequeue(out var handlerInfo));
+        Assert.Equal($"{nameof(MultiRequestTypeHandler)}::{nameof(GetConfigurationRequest)}::{request.Key}", handlerInfo);
+    }
+
+    [Fact]
+    public async Task Send_MultipleDistinctRequests_InvokesCorrectHandlersInMultiHandlerClass()
+    {
+        // Arrange
+        var command = new ProcessDataCommand("first");
+        var query = new CalculateValueQuery(10);
+        var configRequest = new GetConfigurationRequest("OTHER"); // Optional
+
+        _notificationTracker.ExecutionOrder.Clear(); // Ensure clean state
+
+        // Act
+        var commandResult = await _sender.Send(command);
+        var queryResult = await _sender.Send(query);
+        var configResult = await _sender.Send(configRequest); // Optional
+
+        // Assert
+        // 1. Check responses (optional, but good practice)
+        Assert.True(commandResult.IsSuccess);
+        Assert.Equal("Processed: FIRST", commandResult.Value);
+        Assert.Equal(20, queryResult);
+        Assert.Null(configResult); // Optional
+
+        // 2. Check the tracker for distinct calls
+        var expectedCount = 3; // Change to 2 if not using GetConfigurationRequest
+        Assert.Equal(expectedCount, _notificationTracker.ExecutionOrder.Count);
+
+        var executedHandlers = _notificationTracker.ExecutionOrder.ToList();
+        Assert.Contains($"{nameof(MultiRequestTypeHandler)}::{nameof(ProcessDataCommand)}::{command.Data}", executedHandlers);
+        Assert.Contains($"{nameof(MultiRequestTypeHandler)}::{nameof(CalculateValueQuery)}::{query.Input}", executedHandlers);
+        Assert.Contains($"{nameof(MultiRequestTypeHandler)}::{nameof(GetConfigurationRequest)}::{configRequest.Key}", executedHandlers); // Optional
+    }
+
     public void Dispose()
     {
         _scope.Dispose();

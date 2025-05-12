@@ -42,6 +42,22 @@ public record CatQuery(string Name) : AnimalQuery(Name);
 [RequestHandler(typeof(DogQueryHandler))]
 public record DogQuery(string Name, string Breed) : AnimalQuery(Name);
 
+public class ProcessDataCommand(string data) : IRequest<Result<string>>
+{
+    public string Data { get; } = data;
+}
+
+public class CalculateValueQuery(int input) : IRequest<int>
+{
+    public int Input { get; } = input;
+}
+
+public class GetConfigurationRequest(string key) : IRequest<string?>
+{
+    public string Key { get; } = key;
+}
+
+
 // Notification types
 public class UserLoggedInEvent(int userId) : INotification
 {
@@ -49,6 +65,24 @@ public class UserLoggedInEvent(int userId) : INotification
 }
 
 public class DerivedUserLoggedInEvent(int userId) : UserLoggedInEvent(userId);
+
+public class StartProcessNotification(Guid processId) : INotification
+{
+    public Guid ProcessId { get; } = processId;
+}
+
+public class EndProcessNotification(Guid processId, bool success) : INotification
+{
+    public Guid ProcessId { get; } = processId;
+    public bool Success { get; } = success;
+}
+
+// Optional: Add a third one for more thorough testing
+public class MonitorProcessNotification(Guid processId, double progress) : INotification
+{
+    public Guid ProcessId { get; } = processId;
+    public double Progress { get; } = progress;
+}
 
 // Response models
 public class User : IVersionedResponse
@@ -111,6 +145,44 @@ public class CreateOrderRequestHandler : IRequestHandler<CreateOrderRequest, int
         42; // Simulated order ID
 }
 
+// NOTE: While technically possible, combining unrelated request handlers
+// in one class is generally discouraged due to Single Responsibility Principle concerns.
+// This class exists primarily for testing the mediator's resolution capabilities.
+public class MultiRequestTypeHandler(NotificationTracker tracker)
+    : IRequestHandler<ProcessDataCommand, Result<string>>,
+        IRequestHandler<CalculateValueQuery, int>,
+        IRequestHandler<GetConfigurationRequest, string?>
+{
+    private readonly NotificationTracker _tracker = tracker;
+
+    // Handle ProcessDataCommand
+    public Task<Result<string>> Handle(ProcessDataCommand request, CancellationToken cancellationToken)
+    {
+        _tracker.ExecutionOrder.Enqueue($"{nameof(MultiRequestTypeHandler)}::{nameof(ProcessDataCommand)}::{request.Data}");
+        // Simulate processing
+        var result = $"Processed: {request.Data.ToUpper()}";
+        return Task.FromResult(Result.Ok(result));
+    }
+
+    // Handle CalculateValueQuery
+    public Task<int> Handle(CalculateValueQuery request, CancellationToken cancellationToken)
+    {
+        _tracker.ExecutionOrder.Enqueue($"{nameof(MultiRequestTypeHandler)}::{nameof(CalculateValueQuery)}::{request.Input}");
+        // Simulate calculation
+        var result = request.Input * 2;
+        return Task.FromResult(result);
+    }
+
+    // Handle GetConfigurationRequest (Optional)
+    public Task<string?> Handle(GetConfigurationRequest request, CancellationToken cancellationToken)
+    {
+        _tracker.ExecutionOrder.Enqueue($"{nameof(MultiRequestTypeHandler)}::{nameof(GetConfigurationRequest)}::{request.Key}");
+        // Simulate config lookup
+        string? result = request.Key == "TIMEOUT" ? "30000" : null;
+        return Task.FromResult(result);
+    }
+}
+
 // Notification Handlers
 public class UserLoggedInLogger : INotificationHandler<UserLoggedInEvent>
 {
@@ -122,6 +194,35 @@ public class UserLoggedInAnalytics : INotificationHandler<UserLoggedInEvent>
 {
     public async Task Handle(UserLoggedInEvent notification, CancellationToken cancellationToken = default) =>
         Console.WriteLine($"Analytics: User {notification.UserId} tracked.");
+}
+
+public class MultiProcessNotificationHandler(NotificationTracker tracker)
+    : INotificationHandler<StartProcessNotification>,
+        INotificationHandler<EndProcessNotification>,
+        INotificationHandler<MonitorProcessNotification> // Add this if using the third notification
+{
+    private readonly NotificationTracker _tracker = tracker;
+
+    // Handle StartProcessNotification
+    public Task Handle(StartProcessNotification notification, CancellationToken cancellationToken)
+    {
+        _tracker.ExecutionOrder.Enqueue($"{nameof(MultiProcessNotificationHandler)}::{nameof(StartProcessNotification)}::{notification.ProcessId}");
+        return Task.CompletedTask;
+    }
+
+    // Handle EndProcessNotification
+    public Task Handle(EndProcessNotification notification, CancellationToken cancellationToken)
+    {
+        _tracker.ExecutionOrder.Enqueue($"{nameof(MultiProcessNotificationHandler)}::{nameof(EndProcessNotification)}::{notification.ProcessId}::{notification.Success}");
+        return Task.CompletedTask;
+    }
+
+    // Handle MonitorProcessNotification (if using)
+    public Task Handle(MonitorProcessNotification notification, CancellationToken cancellationToken)
+    {
+        _tracker.ExecutionOrder.Enqueue($"{nameof(MultiProcessNotificationHandler)}::{nameof(MonitorProcessNotification)}::{notification.ProcessId}::{notification.Progress}");
+        return Task.CompletedTask;
+    }
 }
 
 // FluentValidation validators

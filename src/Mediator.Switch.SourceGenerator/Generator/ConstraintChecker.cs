@@ -1,5 +1,6 @@
 using Mediator.Switch.SourceGenerator.Extensions;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
 
 namespace Mediator.Switch.SourceGenerator.Generator;
 
@@ -10,31 +11,41 @@ public static class ConstraintChecker
         if (param == null) return true; // No constraints
 
         // 1. Check 'struct' constraint (non-nullable value type)
-        // Note: Nullable<T> is a value type, but doesn't satisfy 'struct' constraint.
         if (param.HasValueTypeConstraint) // where T : struct
         {
-            // Must be a value type AND not System.Nullable<T>
             if (!typeSymbol.IsValueType || typeSymbol.IsNullableValueType())
             {
                 return false;
             }
         }
 
-        // 2. Check 'class' constraint (reference type)
-        if (param.HasReferenceTypeConstraint) // where T : class
+        // 2. Check 'class' constraint (reference type) - CORRECTED FOR NRTs
+        if (param.HasReferenceTypeConstraint) // where T : class OR where T : class?
         {
-            // Includes interfaces, delegates, arrays, classes. Also allows nullable reference types (e.g., string?)
+            // Argument must fundamentally be a reference type.
             if (!typeSymbol.IsReferenceType)
             {
                 return false;
             }
+
+            // Check nullability compatibility:
+            // Is the constraint explicitly nullable ('class?')
+            var constraintAllowsNullable = param.ConstraintNullableAnnotations.Contains(NullableAnnotation.Annotated);
+            // Is the argument type actually nullable (e.g., string?)
+            var argumentIsNullable = typeSymbol.NullableAnnotation == NullableAnnotation.Annotated;
+
+            // If the argument IS nullable, but the constraint does NOT allow nullables (it's just 'class'), then it fails.
+            if (argumentIsNullable && !constraintAllowsNullable)
+            {
+                return false;
+            }
+            // Otherwise (arg T + constraint class, arg T + constraint class?, arg T? + constraint class?), it's compatible.
         }
 
         // 3. Check 'notnull' constraint
-        if (param.HasNotNullConstraint) // where T : notnull
+        if (param.ConstraintNullableAnnotations.Contains(NullableAnnotation.NotAnnotated)) // where T : notnull
         {
             // Must be a non-nullable value type OR a reference type not annotated as nullable.
-            // This check relies on NullableAnnotation which is context-dependent.
             if (typeSymbol.IsNullableValueType() ||
                 typeSymbol is { IsReferenceType: true, NullableAnnotation: NullableAnnotation.Annotated }) // e.g., string? fails
             {
@@ -54,31 +65,39 @@ public static class ConstraintChecker
         // 5. Check 'new()' constraint (parameterless constructor)
         if (param.HasConstructorConstraint) // where T : new()
         {
-            // Value types always satisfy this (implicit default constructor)
-            // Reference types need an accessible parameterless constructor
             if (!typeSymbol.IsValueType)
             {
-                // Check for accessible parameterless constructor on reference types
-                var hasAccessibleParameterlessConstructor = typeSymbol.GetMembers()
-                    .OfType<IMethodSymbol>()
-                    .Any(m => m.MethodKind == MethodKind.Constructor &&
-                              m is { IsStatic: false, Parameters.IsEmpty: true } &&
-                              // Check accessibility (Public or Protected within the same assembly context might be needed depending on strictness)
-                              m.DeclaredAccessibility == Accessibility.Public); // Or check if accessible from current context
+                // Check for accessible public parameterless constructor on reference types
+                var hasPublicParameterlessConstructor =
+                    typeSymbol is INamedTypeSymbol namedTypeSymbol && // Ensure it's a named type to check constructors
+                    !namedTypeSymbol.IsAbstract && // Abstract types cannot be instantiated
+                    namedTypeSymbol.InstanceConstructors.Any(m =>
+                        m.Parameters.IsEmpty &&
+                        m.DeclaredAccessibility == Accessibility.Public); // Check for public parameterless
 
-                if (!hasAccessibleParameterlessConstructor)
+                if (!hasPublicParameterlessConstructor)
                 {
                     return false;
                 }
             }
+            // Value types implicitly satisfy new()
         }
 
         // 6. Check Type constraints (Base class and Interfaces)
-        var constraints = param.ConstraintTypes;
-        foreach (var constraint in constraints) // No need to filter nulls, ConstraintTypes shouldn't contain them
+        foreach (var constraintType in param.ConstraintTypes)
         {
-            if (!compilation.HasImplicitConversion(typeSymbol, constraint))
-                return false;
+            // Use compilation.ClassifyConversion for a more robust check than HasImplicitConversion
+            var conversion = compilation.ClassifyConversion(typeSymbol, constraintType);
+            // Needs an identity, implicit reference, boxing, or implicit nullable conversion.
+            // Unboxing/explicit reference conversions usually don't satisfy generic constraints.
+            if (conversion is {IsIdentity: false, IsImplicit: false}) // Includes implicit reference, boxing, nullable value type to base type etc.
+            {
+                 // Add specific check for interface implementation if conversion fails (e.g., value type implementing interface)
+                 if (!(constraintType.TypeKind == TypeKind.Interface && typeSymbol.AllInterfaces.Contains(constraintType, SymbolEqualityComparer.Default)))
+                 {
+                    return false;
+                 }
+            }
         }
 
         // If we passed all checks, the constraints are satisfied
