@@ -215,16 +215,20 @@ public class SemanticAnalyzer
 
     private void TryAddNotificationHandler(INamedTypeSymbol typeSymbol, List<(INamedTypeSymbol Class, ITypeSymbol TNotification)> notificationHandlers)
     {
-        var notificationHandlerInterface = typeSymbol.AllInterfaces.FirstOrDefault(i =>
+        var notificationHandlerInterfaces = typeSymbol.AllInterfaces.Where(i =>
             SymbolEqualityComparer.Default.Equals(i.OriginalDefinition, _iNotificationHandlerSymbol));
 
-        // Ensure it's a concrete implementation of INotificationHandler<TNotification>
-        if (notificationHandlerInterface != null && typeSymbol.TypeArguments.Length == 0)
+        // check all implemented interfaces.
+        foreach (var notificationHandlerInterface in notificationHandlerInterfaces)
         {
-            var notification = notificationHandlerInterface.TypeArguments.FirstOrDefault();
-            if (notification != null)
+            // Ensure it's a concrete implementation of INotificationHandler<TNotification>
+            if (notificationHandlerInterface != null && typeSymbol.TypeArguments.Length == 0)
             {
-                notificationHandlers.Add((typeSymbol, notification));
+                var notification = notificationHandlerInterface.TypeArguments.FirstOrDefault();
+                if (notification != null)
+                {
+                    notificationHandlers.Add((typeSymbol, notification));
+                }
             }
         }
     }
