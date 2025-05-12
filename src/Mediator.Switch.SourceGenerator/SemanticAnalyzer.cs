@@ -84,6 +84,14 @@ public class SemanticAnalyzer
             return;
         }
 
+        if (typeSymbol.IsAbstract || typeSymbol.IsUnboundGenericType)
+        {
+            TryAddRequest(typeSymbol, requests);
+            TryAddNotification(typeSymbol, notifications);
+            TryAddPipelineBehavior(typeSymbol, behaviors);
+            return;
+        }
+
         // Check for different Mediator-related interface implementations
         TryAddRequest(typeSymbol, requests);
         TryAddRequestHandler(typeSymbol, handlers);
@@ -97,7 +105,6 @@ public class SemanticAnalyzer
         var requestInterface = typeSymbol.AllInterfaces.FirstOrDefault(i =>
             SymbolEqualityComparer.Default.Equals(i.OriginalDefinition, _iRequestSymbol));
 
-        // Ensure it's a concrete implementation of IRequest<T>
         if (requestInterface != null && typeSymbol.TypeArguments.Length == 0)
         {
             var tResponse = requestInterface.TypeArguments[0];
@@ -107,15 +114,22 @@ public class SemanticAnalyzer
 
     private void TryAddRequestHandler(INamedTypeSymbol typeSymbol, List<(INamedTypeSymbol Class, ITypeSymbol TRequest, ITypeSymbol TResponse)> handlers)
     {
-        var handlerInterface = typeSymbol.AllInterfaces.FirstOrDefault(i =>
+        var handlerInterfaces = typeSymbol.AllInterfaces.Where(i =>
             SymbolEqualityComparer.Default.Equals(i.OriginalDefinition, _iRequestHandlerSymbol));
 
-        // Ensure it's a concrete implementation of IRequestHandler<TRequest, TResponse>
-        if (handlerInterface != null && typeSymbol.TypeArguments.Length == 0 && !typeSymbol.IsAbstract)
+        foreach (var handlerInterface in handlerInterfaces)
         {
+            if (handlerInterface.TypeArguments.Length != 2)
+                continue;
+
             var tRequest = handlerInterface.TypeArguments[0];
             var tResponse = handlerInterface.TypeArguments[1];
-            VerifyRequestMatchesHandler(typeSymbol, tRequest); // Verify attribute if present
+
+            if (tRequest.Kind == SymbolKind.TypeParameter || tResponse.Kind == SymbolKind.TypeParameter)
+                continue;
+
+            VerifyRequestMatchesHandler(typeSymbol, tRequest);
+
             handlers.Add((typeSymbol, tRequest, tResponse));
         }
     }
@@ -125,8 +139,7 @@ public class SemanticAnalyzer
         var behaviorInterface = typeSymbol.AllInterfaces.FirstOrDefault(i =>
             SymbolEqualityComparer.Default.Equals(i.OriginalDefinition, _iPipelineBehaviorSymbol));
 
-        // Ensure it's a concrete implementation of IPipelineBehavior<TRequest, TResponse>
-        if (behaviorInterface == null || typeSymbol.IsAbstract)
+        if (behaviorInterface == null)
         {
             return;
         }
@@ -202,8 +215,7 @@ public class SemanticAnalyzer
         var notificationInterface = typeSymbol.AllInterfaces.FirstOrDefault(i =>
             SymbolEqualityComparer.Default.Equals(i.OriginalDefinition, _iNotificationSymbol));
 
-        // Ensure it's a concrete implementation of INotification
-        if (notificationInterface != null && typeSymbol.TypeArguments.Length == 0 && !typeSymbol.IsAbstract)
+        if (notificationInterface != null && typeSymbol.TypeArguments.Length == 0)
         {
             // Avoid adding duplicates if a type appears multiple times (e.g., partial classes)
             if (!foundNotificationTypes.Contains(typeSymbol, SymbolEqualityComparer.Default))
@@ -218,17 +230,15 @@ public class SemanticAnalyzer
         var notificationHandlerInterfaces = typeSymbol.AllInterfaces.Where(i =>
             SymbolEqualityComparer.Default.Equals(i.OriginalDefinition, _iNotificationHandlerSymbol));
 
-        // check all implemented interfaces.
         foreach (var notificationHandlerInterface in notificationHandlerInterfaces)
         {
-            // Ensure it's a concrete implementation of INotificationHandler<TNotification>
-            if (notificationHandlerInterface != null && typeSymbol.TypeArguments.Length == 0)
+            if (notificationHandlerInterface == null || typeSymbol.TypeArguments.Length != 0)
+                continue;
+
+            var notification = notificationHandlerInterface.TypeArguments.FirstOrDefault();
+            if (notification != null)
             {
-                var notification = notificationHandlerInterface.TypeArguments.FirstOrDefault();
-                if (notification != null)
-                {
-                    notificationHandlers.Add((typeSymbol, notification));
-                }
+                notificationHandlers.Add((typeSymbol, notification));
             }
         }
     }

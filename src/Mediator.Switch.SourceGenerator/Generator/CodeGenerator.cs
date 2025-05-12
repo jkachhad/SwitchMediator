@@ -32,7 +32,10 @@ public static class CodeGenerator
         var usedNotifications = new HashSet<ITypeSymbol>(actualPublishCases.Select(c => c.ActualNotification), SymbolEqualityComparer.Default);
 
         // Generate fields
-        var handlerFields = handlers.Select(h => $"private {h.Class}? _{h.Class.GetVariableName()};");
+        var handlerFields = handlers
+            .Select(h => h.Class) // Get the class symbol for each handler entry
+            .Distinct<INamedTypeSymbol>(SymbolEqualityComparer.Default) // Get unique handler classes
+            .Select(cls => $"private {cls}? _{cls.GetVariableName()};"); // Generate one field per class
 
         // Generate behavior fields specific to each request, respecting constraints
         var behaviorFields = actualRequestBehaviors.SelectMany(r =>
@@ -59,7 +62,10 @@ public static class CodeGenerator
             .Select(n => GeneratePublishCase(n.ActualNotification, n.Notification));
 
         // Generate known types
-        var requestHandlerTypes = handlers.Select(h => $"typeof({h.Class})");
+        var requestHandlerTypes = handlers
+            .Select(h => h.Class)
+            .Distinct<INamedTypeSymbol>(SymbolEqualityComparer.Default)
+            .Select(cls => $"typeof({cls})");
         var notificationTypes = usedNotifications.Select(n =>
             $"(typeof({n}), new Type[] {{\n                    {string.Join(",\n                    ", notificationHandlers
                 .Where(h => h.TNotification.Equals(n, SymbolEqualityComparer.Default))
