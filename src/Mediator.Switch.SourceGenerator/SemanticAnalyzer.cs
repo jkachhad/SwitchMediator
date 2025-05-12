@@ -87,17 +87,21 @@ public class SemanticAnalyzer
         if (typeSymbol.IsAbstract || typeSymbol.IsUnboundGenericType)
         {
             TryAddRequest(typeSymbol, requests);
-            TryAddNotification(typeSymbol, notifications);
             TryAddPipelineBehavior(typeSymbol, behaviors);
             return;
         }
 
-        // Check for different Mediator-related interface implementations
-        TryAddRequest(typeSymbol, requests);
-        TryAddRequestHandler(typeSymbol, handlers);
-        TryAddPipelineBehavior(typeSymbol, behaviors);
-        TryAddNotification(typeSymbol, notifications);
-        TryAddNotificationHandler(typeSymbol, notificationHandlers);
+        if (typeSymbol.TypeArguments.Length == 0)
+        {
+            TryAddRequest(typeSymbol, requests);
+            TryAddRequestHandler(typeSymbol, handlers);
+            TryAddNotification(typeSymbol, notifications);
+            TryAddNotificationHandler(typeSymbol, notificationHandlers);
+        }
+        else
+        {
+            TryAddPipelineBehavior(typeSymbol, behaviors);
+        }
     }
 
     private void TryAddRequest(INamedTypeSymbol typeSymbol, List<(INamedTypeSymbol Class, ITypeSymbol TResponse)> requests)
@@ -105,7 +109,7 @@ public class SemanticAnalyzer
         var requestInterface = typeSymbol.AllInterfaces.FirstOrDefault(i =>
             SymbolEqualityComparer.Default.Equals(i.OriginalDefinition, _iRequestSymbol));
 
-        if (requestInterface != null && typeSymbol.TypeArguments.Length == 0)
+        if (requestInterface != null)
         {
             var tResponse = requestInterface.TypeArguments[0];
             requests.Add((typeSymbol, tResponse));
@@ -215,7 +219,7 @@ public class SemanticAnalyzer
         var notificationInterface = typeSymbol.AllInterfaces.FirstOrDefault(i =>
             SymbolEqualityComparer.Default.Equals(i.OriginalDefinition, _iNotificationSymbol));
 
-        if (notificationInterface != null && typeSymbol.TypeArguments.Length == 0)
+        if (notificationInterface != null)
         {
             // Avoid adding duplicates if a type appears multiple times (e.g., partial classes)
             if (!foundNotificationTypes.Contains(typeSymbol, SymbolEqualityComparer.Default))
@@ -232,7 +236,7 @@ public class SemanticAnalyzer
 
         foreach (var notificationHandlerInterface in notificationHandlerInterfaces)
         {
-            if (notificationHandlerInterface == null || typeSymbol.TypeArguments.Length != 0)
+            if (notificationHandlerInterface == null)
                 continue;
 
             var notification = notificationHandlerInterface.TypeArguments.FirstOrDefault();
